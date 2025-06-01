@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { X, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../AuthContext';
 
 const SlidingAuthPanel = ({ isOpen, togglePanel }) => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -10,6 +13,8 @@ const SlidingAuthPanel = ({ isOpen, togglePanel }) => {
     password: '',
     confirmPassword: ''
   });
+  const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleInputChange = (e) => {
     setFormData({
@@ -18,9 +23,47 @@ const SlidingAuthPanel = ({ isOpen, togglePanel }) => {
     });
   };
 
-  const handleSubmit = () => {
-    console.log('Form submitted:', formData);
-    // Add your authentication logic here
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    if (isSignUp) {
+      // Handle signup
+      axios.post('http://localhost:5000/signup', formData)
+        .then(response => {
+          console.log('Signup Response:', response.data);
+          // After successful signup, switch to login mode
+          setIsSignUp(false);
+          // Clear form data except email for convenience
+          setFormData({
+            name: '',
+            email: formData.email, // Keep email for login
+            password: '',
+            confirmPassword: ''
+          });
+          // Optionally show a success message here
+          alert('Account created successfully! Please login.');
+        })
+        .catch(error => {
+          console.error('Signup Error:', error);
+          // Handle signup error (show error message to user)
+        });
+    } else {
+      // Handle login
+      axios.post('http://localhost:5000/login', formData)
+        .then(response => {
+          console.log('Login Response:', response.data);
+          // Update authentication state and store token
+          login(response.data.token); // Assuming your API returns a token
+          
+          // Close the auth panel and navigate to dashboard
+          togglePanel();
+          navigate('/dashboard');
+        })
+        .catch(error => {
+          console.error('Login Error:', error);
+          // Handle login error (show error message to user)
+        });
+    }
   };
 
   const handleTogglePanel = () => {
@@ -174,13 +217,6 @@ const SlidingAuthPanel = ({ isOpen, togglePanel }) => {
                     </svg>
                     <span className="ml-2">Google</span>
                   </button>
-
-                  {/* <button className="w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors">
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
-                    </svg>
-                    <span className="ml-2">Twitter</span>
-                  </button> */}
                 </div>
               </div>
 
