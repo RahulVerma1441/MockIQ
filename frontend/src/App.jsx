@@ -9,21 +9,19 @@ import Medical from "./pages/Medical";
 import Analysis from "./pages/Analysis";
 import ContactUs from "./pages/ContactUs";
 import Leaderboard from "./pages/Leaderboard";
-import Settings from "./pages/setting";
+import Settings from "./pages/Settings";
 import Header from "./components/common2/Header";
 import Sidebar from "./components/common2/Sidebar";
 
 // Dashboard Layout Component
 function DashboardLayout({ children }) {
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col">
       <Header />
-      <div className="flex h-screen bg-gray-100">
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
-          <div className="container mx-auto px-6 py-8">
-            {children}
-          </div>
+        <main className="flex-1 overflow-y-auto bg-gray-100">
+          {children}
         </main>
       </div>
     </div>
@@ -94,7 +92,7 @@ function AppRoutes() {
             } 
           />
           <Route 
-            path="/dashboard/settings" 
+            path="/dashboard/Settings" 
             element={
               <DashboardLayout>
                 <Settings />

@@ -18,7 +18,7 @@ const Header = () => {
                     alt="Logo"
                     className="w-12 h-12 rounded-full"
                 />
-            <span className="text-xl font-bold text-gray-900">OTA</span>
+            <span className="text-xl font-bold text-gray-900">MockIQ</span>
           </div>
         </div>
         

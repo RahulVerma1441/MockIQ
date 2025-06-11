@@ -61,7 +61,7 @@ const ContactUs = () => {
     {
       icon: <Mail className="w-6 h-6" />,
       title: 'Email Us',
-      content: 'support@ota.com',
+      content: 'support@mockiq.com',
       description: 'Get help within 24 hours',
       color: 'from-blue-500 to-blue-600'
     },

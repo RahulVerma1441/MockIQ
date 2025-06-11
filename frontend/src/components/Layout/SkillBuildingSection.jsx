@@ -44,7 +44,7 @@ export default function SkillBuildingSection() {
   return (
     <section className="mt-20 mb-16">
       <div className="text-center mb-12">
-        <h2 className="text-4xl font-bold mb-4">A Skill-Building Journey with OTA</h2>
+        <h2 className="text-4xl font-bold mb-4">A Skill-Building Journey with MockIQ</h2>
         <p className="text-gray-600">How real exam questions helped thousands gain confidence and improve their scores.</p>
       </div>
 

@@ -18,7 +18,7 @@ export default function WhyLearnSection() {
             </div>
           </div>
           <div>
-            <h2 className="text-4xl font-bold mb-6">Why We Learn From OTA</h2>
+            <h2 className="text-4xl font-bold mb-6">Why We Learn From MockIQ</h2>
             <p className="text-gray-700 mb-8">Looking to crack top-tier engineering and medical entrance exams? Our platform offers actual previous year questions from the most competitive exams—absolutely free. Practice smarter, not harder.</p>
             <div className="space-y-4">
               {features.map((feature, index) => (

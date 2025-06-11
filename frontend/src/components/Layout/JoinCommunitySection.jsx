@@ -6,7 +6,7 @@ export default function JoinCommunitySection() {
       <div className="bg-gray-900 text-white rounded-3xl p-12 max-w-6xl mx-auto relative overflow-hidden">
         <div className="text-center relative z-10">
           <h2 className="text-4xl font-bold mb-4">Join The Community</h2>
-          <p className="text-gray-300 mb-8">At OTA, we believe that learning is a collaborative process.</p>
+          <p className="text-gray-300 mb-8">At MockIQ, we believe that learning is a collaborative process.</p>
           
           <div className="flex justify-center">
             <div className="flex bg-white rounded-full overflow-hidden max-w-md w-full">

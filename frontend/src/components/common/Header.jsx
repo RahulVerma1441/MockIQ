@@ -18,7 +18,7 @@ export default function Header() {
             alt="Logo"
             className="w-12 h-12 rounded-full"
           />
-          OTA
+          MockIQ
         </div>
         <nav className="hidden md:flex gap-8 text-lg">
           <a href="#" className="hover:underline">

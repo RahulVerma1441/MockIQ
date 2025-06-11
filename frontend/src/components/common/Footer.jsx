@@ -10,7 +10,7 @@ export default function Footer() {
           <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
             <span className="text-gray-900 font-bold">O</span>
           </div>
-          <span className="text-xl font-bold">OTA</span>
+          <span className="text-xl font-bold">MockIQ</span>
         </div>
         
         <nav className="flex gap-8 mb-4 md:mb-0">
@@ -19,7 +19,7 @@ export default function Footer() {
           ))}
         </nav>
         
-        <p className="text-sm text-gray-400">© 2024 OTA.</p>
+        <p className="text-sm text-gray-400">© 2024 MockIQ.</p>
       </div>
     </footer>
   );
