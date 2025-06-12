@@ -7,9 +7,9 @@ const MedicalExams = () => {
 
   const exams = [
     { id: 'neet-ug', name: 'NEET UG', color: 'bg-red-500' },
-    { id: 'neet-pg', name: 'NEET PG', color: 'bg-pink-500' },
-    { id: 'aiims', name: 'AIIMS', color: 'bg-indigo-500' },
-    { id: 'jipmer', name: 'JIPMER', color: 'bg-teal-500' }
+    // { id: 'neet-pg', name: 'NEET PG', color: 'bg-pink-500' },
+    // { id: 'aiims', name: 'AIIMS', color: 'bg-indigo-500' },
+    // { id: 'jipmer', name: 'JIPMER', color: 'bg-teal-500' }
   ];
 
   const papers = {
@@ -22,23 +22,23 @@ const MedicalExams = () => {
       { year: 2021, session: 'September', shift: 'Single Phase', date: '12 Sep 2021', subjects: ['Physics', 'Chemistry', 'Biology'], duration: '3 hours 20 minutes' },
       { year: 2020, session: 'September', shift: 'Single Phase', date: '13 Sep 2020', subjects: ['Physics', 'Chemistry', 'Biology'], duration: '3 hours 20 minutes' }
     ],
-    'NEET PG': [
-      { year: 2024, session: 'August', shift: 'Single Phase', date: '11 Aug 2024', subjects: ['Pre-clinical', 'Para-clinical', 'Clinical'], duration: '3 hours 30 minutes' },
-      { year: 2023, session: 'March', shift: 'Single Phase', date: '5 Mar 2023', subjects: ['Pre-clinical', 'Para-clinical', 'Clinical'], duration: '3 hours 30 minutes' },
-      { year: 2022, session: 'May', shift: 'Single Phase', date: '21 May 2022', subjects: ['Pre-clinical', 'Para-clinical', 'Clinical'], duration: '3 hours 30 minutes' },
-      { year: 2021, session: 'September', shift: 'Single Phase', date: '11 Sep 2021', subjects: ['Pre-clinical', 'Para-clinical', 'Clinical'], duration: '3 hours 30 minutes' }
-    ],
-    'AIIMS': [
-      { year: 2023, session: 'May', shift: 'Phase 1', date: '20 May 2023', subjects: ['Physics', 'Chemistry', 'Biology', 'General Knowledge'], duration: '3 hours 30 minutes' },
-      { year: 2023, session: 'May', shift: 'Phase 2', date: '21 May 2023', subjects: ['Physics', 'Chemistry', 'Biology', 'General Knowledge'], duration: '3 hours 30 minutes' },
-      { year: 2022, session: 'June', shift: 'Phase 1', date: '12 Jun 2022', subjects: ['Physics', 'Chemistry', 'Biology', 'General Knowledge'], duration: '3 hours 30 minutes' },
-      { year: 2021, session: 'February', shift: 'Phase 1', date: '20 Feb 2021', subjects: ['Physics', 'Chemistry', 'Biology', 'General Knowledge'], duration: '3 hours 30 minutes' }
-    ],
-    'JIPMER': [
-      { year: 2023, session: 'June', shift: 'Phase 1', date: '4 Jun 2023', subjects: ['Physics', 'Chemistry', 'Biology', 'English'], duration: '2 hours 30 minutes' },
-      { year: 2022, session: 'July', shift: 'Phase 1', date: '6 Jul 2022', subjects: ['Physics', 'Chemistry', 'Biology', 'English'], duration: '2 hours 30 minutes' },
-      { year: 2021, session: 'August', shift: 'Phase 1', date: '1 Aug 2021', subjects: ['Physics', 'Chemistry', 'Biology', 'English'], duration: '2 hours 30 minutes' }
-    ]
+    // 'NEET PG': [
+    //   { year: 2024, session: 'August', shift: 'Single Phase', date: '11 Aug 2024', subjects: ['Pre-clinical', 'Para-clinical', 'Clinical'], duration: '3 hours 30 minutes' },
+    //   { year: 2023, session: 'March', shift: 'Single Phase', date: '5 Mar 2023', subjects: ['Pre-clinical', 'Para-clinical', 'Clinical'], duration: '3 hours 30 minutes' },
+    //   { year: 2022, session: 'May', shift: 'Single Phase', date: '21 May 2022', subjects: ['Pre-clinical', 'Para-clinical', 'Clinical'], duration: '3 hours 30 minutes' },
+    //   { year: 2021, session: 'September', shift: 'Single Phase', date: '11 Sep 2021', subjects: ['Pre-clinical', 'Para-clinical', 'Clinical'], duration: '3 hours 30 minutes' }
+    // ],
+    // 'AIIMS': [
+    //   { year: 2023, session: 'May', shift: 'Phase 1', date: '20 May 2023', subjects: ['Physics', 'Chemistry', 'Biology', 'General Knowledge'], duration: '3 hours 30 minutes' },
+    //   { year: 2023, session: 'May', shift: 'Phase 2', date: '21 May 2023', subjects: ['Physics', 'Chemistry', 'Biology', 'General Knowledge'], duration: '3 hours 30 minutes' },
+    //   { year: 2022, session: 'June', shift: 'Phase 1', date: '12 Jun 2022', subjects: ['Physics', 'Chemistry', 'Biology', 'General Knowledge'], duration: '3 hours 30 minutes' },
+    //   { year: 2021, session: 'February', shift: 'Phase 1', date: '20 Feb 2021', subjects: ['Physics', 'Chemistry', 'Biology', 'General Knowledge'], duration: '3 hours 30 minutes' }
+    // ],
+    // 'JIPMER': [
+    //   { year: 2023, session: 'June', shift: 'Phase 1', date: '4 Jun 2023', subjects: ['Physics', 'Chemistry', 'Biology', 'English'], duration: '2 hours 30 minutes' },
+    //   { year: 2022, session: 'July', shift: 'Phase 1', date: '6 Jul 2022', subjects: ['Physics', 'Chemistry', 'Biology', 'English'], duration: '2 hours 30 minutes' },
+    //   { year: 2021, session: 'August', shift: 'Phase 1', date: '1 Aug 2021', subjects: ['Physics', 'Chemistry', 'Biology', 'English'], duration: '2 hours 30 minutes' }
+    // ]
   };
 
   const filteredPapers = papers[selectedExam] || [];
@@ -65,7 +65,7 @@ const MedicalExams = () => {
   }, [isDropdownOpen]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-pink-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-6">
@@ -211,13 +211,13 @@ const MedicalExams = () => {
                       </div>
                       
                       <div className="flex space-x-3">
-                        <button className="flex items-center space-x-2 px-4 py-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors duration-150">
+                        {/* <button className="flex items-center space-x-2 px-4 py-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors duration-150">
                           <Eye className="w-4 h-4" />
                           <span className="font-medium">Preview</span>
-                        </button>
-                        <button className={`flex items-center space-x-2 px-4 py-2 text-white ${selectedExamData?.color || 'bg-red-500'} hover:opacity-90 rounded-lg transition-all duration-150`}>
-                          <Download className="w-4 h-4" />
-                          <span className="font-medium">Download</span>
+                        </button> */}
+                        <button className={`flex items-center space-x-2 px-8 py-2 text-white ${selectedExamData?.color || 'bg-red-500'} hover:opacity-90 rounded-lg transition-all duration-150`}>
+                          {/* <Download className="w-4 h-4" /> */}
+                          <span className="font-medium">Start Test</span>
                         </button>
                       </div>
                     </div>

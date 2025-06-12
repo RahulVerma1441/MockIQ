@@ -108,9 +108,9 @@ const Medical = () => {
       {/* Header Section */}
       <div className="mb-8">
         <div className="flex items-center space-x-3 mb-4">
-          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+          {/* <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
             <Stethoscope className="w-6 h-6 text-red-600" />
-          </div>
+          </div> */}
           <h1 className="text-3xl font-bold text-gray-900">Medical Entrance Exams</h1>
         </div>
         <p className="text-gray-600 text-lg">Your gateway to becoming a doctor - comprehensive preparation for medical entrance examinations</p>

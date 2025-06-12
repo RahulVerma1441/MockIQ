@@ -515,9 +515,9 @@ const LeaderboardPage = () => {
                       </div>
                     </td>
                     <td className="py-4 px-4 lg:px-6">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
                         user.lastActive === 'Online' ? 'bg-green-100 text-green-800' :
-                        user.lastActive.includes('hour') ? 'bg-yellow-100 text-yellow-800' :
+                        user.lastActive.includes('hour') || user.lastActive.includes('min') ? 'bg-yellow-100 text-yellow-800' :
                         'bg-gray-100 text-gray-600'
                       }`}>
                         {user.lastActive}
