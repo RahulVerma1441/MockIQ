@@ -12,6 +12,8 @@ import Leaderboard from "./pages/Leaderboard";
 import Settings from "./pages/Settings";
 import Header from "./components/common2/Header";
 import Sidebar from "./components/common2/Sidebar";
+import EnigineeringExams from "./pages/EngineeringExams";
+import MedicalExams from "./pages/MedicalExams";
 
 // Dashboard Layout Component
 function DashboardLayout({ children }) {
@@ -96,6 +98,22 @@ function AppRoutes() {
             element={
               <DashboardLayout>
                 <Settings />
+              </DashboardLayout>
+            } 
+          />
+          <Route 
+            path="/engineering-exams" 
+            element={
+              <DashboardLayout>
+                <EnigineeringExams />
+              </DashboardLayout>
+            } 
+          />
+          <Route 
+            path="/medical-exams" 
+            element={
+              <DashboardLayout>
+                <MedicalExams />
               </DashboardLayout>
             } 
           />
