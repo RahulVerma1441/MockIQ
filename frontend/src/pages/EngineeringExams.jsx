@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ChevronDown, Calendar, Clock, FileText, Download, Eye } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const EnigineeringExams = () => {
+  const navigate = useNavigate();
   const location = useLocation();
   const [selectedExam, setSelectedExam] = useState('JEE Main');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -77,6 +79,27 @@ const EnigineeringExams = () => {
     }
     return () => document.removeEventListener('click', handleClickOutside);
   }, [isDropdownOpen]);
+
+  const handleStartTest = (paper) => {
+    const examDetails = {
+        examName: selectedExam,
+        shift: `${paper.session} ${paper.shift}`,
+        year: paper.year,
+        date: paper.date,
+        duration: paper.duration,
+        subjects: paper.subjects,
+        totalQuestions: selectedExam === 'WBJEE' ? (paper.shift === 'Paper 1' ? 40 : 75) : 90,
+        totalMarks: selectedExam === 'WBJEE' ? (paper.shift === 'Paper 1' ? 160 : 300) : 300
+    };
+
+    navigate("/engineering-exams/rules", { state: examDetails });
+    // This is where you would navigate to the rules page
+    // For now, it will just log the details
+    // console.log('Navigating to rules page with:', examDetails);
+    
+    // In your actual implementation, you would do something like:
+    // navigate('/exam-rules', { state: examDetails });
+    };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -229,9 +252,11 @@ const EnigineeringExams = () => {
                           <Eye className="w-4 h-4" />
                           <span className="font-medium">Preview</span>
                         </button> */}
-                        <button className={`flex items-center space-x-2 px-8 py-2 text-white ${selectedExamData?.color || 'bg-blue-500'} hover:opacity-90 rounded-lg transition-all duration-150`}>
-                          {/* <Download className="w-4 h-4" /> */}
-                          <span className="font-medium">Start Test</span>
+                        <button 
+                            onClick={() => handleStartTest(paper)}
+                            className={`flex items-center space-x-2 px-8 py-2 text-white ${selectedExamData?.color || 'bg-blue-500'} hover:opacity-90 rounded-lg transition-all duration-150`}
+                        >
+                            <span className="font-medium">Start Test</span>
                         </button>
                       </div>
                     </div>

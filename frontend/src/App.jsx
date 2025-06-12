@@ -14,6 +14,7 @@ import Header from "./components/common2/Header";
 import Sidebar from "./components/common2/Sidebar";
 import EnigineeringExams from "./pages/EngineeringExams";
 import MedicalExams from "./pages/MedicalExams";
+import ExamRules from "./pages/ExamsRules";
 
 // Dashboard Layout Component
 function DashboardLayout({ children }) {
@@ -115,6 +116,14 @@ function AppRoutes() {
               <DashboardLayout>
                 <MedicalExams />
               </DashboardLayout>
+            } 
+          />
+          <Route 
+            path="/engineering-exams/rules" 
+            element={
+              // <DashboardLayout>
+                <ExamRules />
+              // </DashboardLayout> 
             } 
           />
         </>
