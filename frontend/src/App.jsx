@@ -15,6 +15,7 @@ import Sidebar from "./components/common2/Sidebar";
 import EnigineeringExams from "./pages/EngineeringExams";
 import MedicalExams from "./pages/MedicalExams";
 import ExamRules from "./pages/ExamsRules";
+import ExamInterface from "./components/Layout2/ExamInterface";
 
 // Dashboard Layout Component
 function DashboardLayout({ children }) {
@@ -121,9 +122,13 @@ function AppRoutes() {
           <Route 
             path="/engineering-exams/rules" 
             element={
-              // <DashboardLayout>
                 <ExamRules />
-              // </DashboardLayout> 
+            } 
+          />
+          <Route 
+            path="/engineering-exams/rules/test-page" 
+            element={
+                <ExamInterface />
             } 
           />
         </>

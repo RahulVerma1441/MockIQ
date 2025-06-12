@@ -68,8 +68,9 @@ const ExamRules = () => {
 
   const handleStartTest = () => {
     if (canStart && agreedToRules) {
-      alert('Starting test! This is where you would navigate to the test page.');
-      console.log('Test started with details:', examDetails);
+        navigate("/engineering-exams/rules/test-page");
+    //   alert('Starting test! This is where you would navigate to the test page.');
+    //   console.log('Test started with details:', examDetails);
     }
   };
 
