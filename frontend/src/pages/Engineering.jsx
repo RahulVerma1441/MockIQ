@@ -1,7 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BookOpen, Calendar, Users, Trophy, ArrowRight, Clock, Target } from 'lucide-react';
 
 const Engineering = () => {
+  const navigate = useNavigate();
+
   const examCards = [
     {
       id: 'jee-main',
@@ -68,8 +71,19 @@ const Engineering = () => {
     }
   ];
 
-  return (
+  // Handle navigation to exam papers page
+  const handleStartPreparation = (examTitle) => {
+    navigate('/engineering-exams', { 
+      state: { selectedExam: examTitle } 
+    });
+  };
 
+  // Handle free mock test navigation
+  const handleFreeMockTest = () => {
+    navigate('/engineering-exams');
+  };
+
+  return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Header Section */}
       <div className="mb-8">
@@ -207,7 +221,10 @@ const Engineering = () => {
               </div>
 
               {/* Action Button */}
-              <button className={`w-full bg-gradient-to-r ${exam.gradient} text-white font-semibold py-3 px-6 rounded-lg hover:opacity-90 transition-all duration-300 flex items-center justify-center space-x-2 group-hover:shadow-lg`}>
+              <button 
+                onClick={() => handleStartPreparation(exam.title)}
+                className={`w-full bg-gradient-to-r ${exam.gradient} text-white font-semibold py-3 px-6 rounded-lg hover:opacity-90 transition-all duration-300 flex items-center justify-center space-x-2 group-hover:shadow-lg`}
+              >
                 <span>Start Preparation</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
               </button>
@@ -222,7 +239,10 @@ const Engineering = () => {
         <p className="text-blue-100 mb-6 max-w-2xl mx-auto">
           Join thousands of successful students who cracked their engineering entrance exams with our comprehensive preparation platform
         </p>
-        <button className="bg-white text-blue-600 font-semibold py-3 px-8 rounded-lg hover:bg-gray-100 transition-colors duration-300">
+        <button 
+          onClick={handleFreeMockTest}
+          className="bg-white text-blue-600 font-semibold py-3 px-8 rounded-lg hover:bg-gray-100 transition-colors duration-300"
+        >
           Take Free Mock Test
         </button>
       </div>
