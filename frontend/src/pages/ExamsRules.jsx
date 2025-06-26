@@ -34,7 +34,7 @@ const ExamRules = () => {
     totalMarks: 300
   };
 
-  // Auto enter fullscreen on component mount
+  // Auto enter fullscreen on component mounty
   useEffect(() => {
     const enterFullscreen = async () => {
       try {
