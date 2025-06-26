@@ -6,11 +6,30 @@ const User = require('./models/User');
 require('dotenv').config();
 
 const app = express();
-app.use(cors());
-app.use(express.json());
 
 // JWT Secret from environment variables
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-here';
+
+// Middleware
+app.use(cors());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Routes
+const examRoutes = require('./routes/examRoutes');
+
+// API Routes
+app.use('/api/exams', examRoutes);
+
+// Health check route
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'MockIQ API is running successfully',
+    timestamp: new Date().toISOString()
+  });
+});
+
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected'))
