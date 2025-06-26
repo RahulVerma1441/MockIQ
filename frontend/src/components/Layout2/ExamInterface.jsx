@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Clock, 
   FileText, 
@@ -15,7 +17,8 @@ import {
   X,
   Flag,
   RotateCcw,
-  Send
+  Send,
+  Maximize
 } from 'lucide-react';
 
 const ExamInterface = () => {
@@ -27,6 +30,10 @@ const ExamInterface = () => {
   const [showSidebar, setShowSidebar] = useState(true);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [currentSubject, setCurrentSubject] = useState('Physics');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [examStarted, setExamStarted] = useState(false);
+  const fullscreenRef = useRef(null);
+  const navigate = useNavigate();
 
   // Sample exam data
   const examDetails = {
@@ -89,43 +96,166 @@ const ExamInterface = () => {
     }
   };
 
-  // Enter fullscreen on component mount
+  // Fullscreen functions
+  const enterFullscreen = async () => {
+    try {
+      const element = fullscreenRef.current || document.documentElement;
+      
+      if (element.requestFullscreen) {
+        await element.requestFullscreen();
+      } else if (element.webkitRequestFullscreen) {
+        await element.webkitRequestFullscreen();
+      } else if (element.msRequestFullscreen) {
+        await element.msRequestFullscreen();
+      } else if (element.mozRequestFullScreen) {
+        await element.mozRequestFullScreen();
+      }
+      setIsFullscreen(true);
+    } catch (error) {
+      console.error('Failed to enter fullscreen:', error);
+      // Show user a message that fullscreen failed
+      alert('Unable to enter fullscreen mode. Please manually press F11 to enter fullscreen.');
+    }
+  };
+
+  const exitFullscreen = async () => {
+    try {
+      if (document.exitFullscreen) {
+        await document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        await document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) {
+        await document.msExitFullscreen();
+      } else if (document.mozCancelFullScreen) {
+        await document.mozCancelFullScreen();
+      }
+      setIsFullscreen(false);
+    } catch (error) {
+      console.error('Failed to exit fullscreen:', error);
+    }
+  };
+
+  // Start exam function
+  const startExam = async () => {
+    await enterFullscreen();
+    setExamStarted(true);
+  };
+
+  // Fullscreen change listener
   useEffect(() => {
-    const enterFullscreen = () => {
-      if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen();
-      } else if (document.documentElement.webkitRequestFullscreen) {
-        document.documentElement.webkitRequestFullscreen();
-      } else if (document.documentElement.msRequestFullscreen) {
-        document.documentElement.msRequestFullscreen();
+    const handleFullscreenChange = () => {
+      const isCurrentlyFullscreen = !!(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.msFullscreenElement ||
+        document.mozFullScreenElement
+      );
+      
+      setIsFullscreen(isCurrentlyFullscreen);
+      
+      // If user exits fullscreen during exam, show warning
+      if (!isCurrentlyFullscreen && examStarted) {
+        const shouldReturn = confirm(
+          'You have exited fullscreen mode. For exam security, please return to fullscreen mode. Click OK to return to fullscreen or Cancel to end the exam.'
+        );
+        
+        if (shouldReturn) {
+          enterFullscreen();
+        } else {
+          handleSubmitTest();
+        }
       }
     };
 
-    enterFullscreen();
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('msfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
 
-    // Prevent accidental page exit
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('msfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+    };
+  }, [examStarted]);
+
+  // Page exit prevention and security
+  useEffect(() => {
+    if (!examStarted) return;
+
     const handleBeforeUnload = (e) => {
+      const message = 'Are you sure you want to leave? Your test progress will be lost.';
       e.preventDefault();
-      e.returnValue = 'Are you sure you want to leave? Your test progress will be lost.';
-      return e.returnValue;
+      e.returnValue = message;
+      return message;
     };
 
     const handleKeyDown = (e) => {
-      // Prevent F11, Alt+Tab, etc.
-      if (e.key === 'F11' || (e.altKey && e.key === 'Tab') || 
-          (e.ctrlKey && (e.key === 'w' || e.key === 'W'))) {
+      // Prevent common exit shortcuts
+      if (
+        e.key === 'F5' || // Refresh
+        (e.ctrlKey && e.key === 'r') || // Ctrl+R refresh
+        (e.ctrlKey && e.key === 'R') ||
+        (e.ctrlKey && e.key === 'w') || // Ctrl+W close tab
+        (e.ctrlKey && e.key === 'W') ||
+        (e.ctrlKey && e.key === 't') || // Ctrl+T new tab
+        (e.ctrlKey && e.key === 'T') ||
+        (e.ctrlKey && e.key === 'n') || // Ctrl+N new window
+        (e.ctrlKey && e.key === 'N') ||
+        (e.ctrlKey && e.shiftKey && e.key === 'I') || // Dev tools
+        (e.ctrlKey && e.shiftKey && e.key === 'i') ||
+        (e.ctrlKey && e.shiftKey && e.key === 'J') ||
+        (e.ctrlKey && e.shiftKey && e.key === 'j') ||
+        (e.ctrlKey && e.key === 'u') || // View source
+        (e.ctrlKey && e.key === 'U') ||
+        e.key === 'F12' || // Dev tools
+        (e.altKey && e.key === 'Tab') || // Alt+Tab
+        (e.altKey && e.key === 'F4') // Alt+F4
+      ) {
         e.preventDefault();
+        e.stopPropagation();
+        return false;
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    window.addEventListener('keydown', handleKeyDown);
+    const handleContextMenu = (e) => {
+      e.preventDefault();
+      return false;
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden && examStarted) {
+        // User switched tabs or minimized window
+        alert('Warning: You have switched away from the exam window. Please stay focused on the exam.');
+      }
+    };
+
+    // Add event listeners
+    window.addEventListener('beforeunload', handleBeforeUnload, { capture: true });
+    document.addEventListener('keydown', handleKeyDown, { capture: true });
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Disable text selection
+    document.body.style.userSelect = 'none';
+    document.body.style.webkitUserSelect = 'none';
+    document.body.style.mozUserSelect = 'none';
+    document.body.style.msUserSelect = 'none';
 
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('beforeunload', handleBeforeUnload, { capture: true });
+      document.removeEventListener('keydown', handleKeyDown, { capture: true });
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      
+      // Re-enable text selection
+      document.body.style.userSelect = '';
+      document.body.style.webkitUserSelect = '';
+      document.body.style.mozUserSelect = '';
+      document.body.style.msUserSelect = '';
     };
-  }, []);
+  }, [examStarted]);
 
   // Update current subject based on current question
   useEffect(() => {
@@ -139,6 +269,8 @@ const ExamInterface = () => {
 
   // Timer effect
   useEffect(() => {
+    if (!examStarted) return;
+
     const timer = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
@@ -151,7 +283,7 @@ const ExamInterface = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [examStarted]);
 
   // Format time display
   const formatTime = (seconds) => {
@@ -242,20 +374,18 @@ const ExamInterface = () => {
     setShowSubmitConfirm(true);
   };
 
-  const confirmSubmit = () => {
+  const confirmSubmit = async () => {
     // Exit fullscreen before submitting
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
-    } else if (document.webkitExitFullscreen) {
-      document.webkitExitFullscreen();
-    } else if (document.msExitFullscreen) {
-      document.msExitFullscreen();
+    if (isFullscreen) {
+      await exitFullscreen();
     }
     
-    alert('Test submitted successfully!');
+    setExamStarted(false);
+    // alert('Test submitted successfully!');
     // Here you would typically send the answers to your backend
-    console.log('Submitted answers:', answers);
-    console.log('Marked for review:', Array.from(markedForReview));
+    // console.log('Submitted answers:', answers);
+    // console.log('Marked for review:', Array.from(markedForReview));
+    navigate('/engineering-exams/rules/test-page/test-result'); 
   };
 
   // Question statistics for current subject
@@ -279,8 +409,57 @@ const ExamInterface = () => {
   const currentQ = questions[currentQuestion] || questions[1];
   const [rangeStart, rangeEnd] = getCurrentSubjectRange();
 
+  // Show start screen if exam hasn't started
+  if (!examStarted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full">
+          <div className="text-center mb-8">
+            <Monitor className="w-16 h-16 text-blue-600 mx-auto mb-4" />
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{examDetails.examName}</h1>
+            <p className="text-lg text-gray-600">{examDetails.shift} {examDetails.year}</p>
+          </div>
+          
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-8">
+            <div className="flex items-start space-x-3">
+              <AlertTriangle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-yellow-800 mb-2">Important Instructions:</h3>
+                <ul className="text-sm text-yellow-700 space-y-1">
+                  <li>• The exam will start in fullscreen mode for security</li>
+                  <li>• Do not exit fullscreen or switch tabs during the exam</li>
+                  <li>• Total duration: 3 hours</li>
+                  <li>• Total questions: {examDetails.totalQuestions}</li>
+                  <li>• You can navigate between questions and mark them for review</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={startExam}
+            className="w-full py-4 bg-blue-600 text-white rounded-lg font-bold text-lg hover:bg-blue-700 transition-colors shadow-lg flex items-center justify-center space-x-2"
+          >
+            <Maximize className="w-6 h-6" />
+            <span>Start Exam</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div ref={fullscreenRef} className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Fullscreen status indicator */}
+      {!isFullscreen && (
+        <div className="bg-red-600 text-white p-2 text-center font-semibold">
+          ⚠️ Not in fullscreen mode - Click here to return to fullscreen
+          <button onClick={enterFullscreen} className="ml-2 underline">
+            Enter Fullscreen
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white shadow-lg border-b sticky top-0 z-10">
         <div className="px-6 py-4">
