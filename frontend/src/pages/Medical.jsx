@@ -100,72 +100,72 @@ const Medical = () => {
         successRate: '89%'
       }
     },
-    {
-      _id: 'aiims',
-      title: 'AIIMS',
-      subtitle: 'All India Institute of Medical Sciences',
-      description: 'Premier medical entrance exam for AIIMS institutes across India',
-      category: 'Medical',
-      examDate: 'May 2024',
-      duration: '3 hours 30 minutes',
-      totalQuestions: '200 Questions',
-      subjects: ['Physics', 'Chemistry', 'Biology', 'General Knowledge', 'Logical Thinking'],
-      difficulty: 'Very High',
-      attempts: '1 attempt per year',
-      gradient: 'from-emerald-500 to-teal-600',
-      bgColor: 'bg-emerald-50',
-      iconColor: 'text-emerald-600',
-      borderColor: 'border-emerald-200',
-      stats: {
-        mockTests: 42,
-        students: '3.2L+',
-        successRate: '94%'
-      }
-    },
-    {
-      _id: 'jipmer',
-      title: 'JIPMER',
-      subtitle: 'Jawaharlal Institute of Postgraduate Medical Education',
-      description: 'Entrance exam for JIPMER Puducherry and Karaikal campuses',
-      category: 'Medical',
-      examDate: 'Jun 2024',
-      duration: '2 hours 30 minutes',
-      totalQuestions: '200 Questions',
-      subjects: ['Physics', 'Chemistry', 'Biology', 'English & Logical Reasoning'],
-      difficulty: 'High',
-      attempts: '1 attempt per year',
-      gradient: 'from-blue-500 to-cyan-600',
-      bgColor: 'bg-blue-50',
-      iconColor: 'text-blue-600',
-      borderColor: 'border-blue-200',
-      stats: {
-        mockTests: 35,
-        students: '1.5L+',
-        successRate: '91%'
-      }
-    },
-    {
-      _id: 'wbneet',
-      title: 'WB NEET',
-      subtitle: 'West Bengal National Eligibility cum Entrance Test',
-      description: 'State counseling process for NEET qualified candidates in West Bengal',
-      category: 'Medical',
-      examDate: 'Post NEET Results',
-      duration: 'Counseling Process',
-      totalQuestions: 'Based on NEET Score',
-      subjects: ['NEET Score Based', 'State Quota Counseling'],
-      difficulty: 'Moderate',
-      attempts: 'Multiple Rounds',
-      gradient: 'from-orange-500 to-amber-600',
-      bgColor: 'bg-orange-50',
-      iconColor: 'text-orange-600',
-      borderColor: 'border-orange-200',
-      stats: {
-        mockTests: 28,
-        students: '2.1L+',
-        successRate: '86%'
-      }
-    }
+    // {
+    //   _id: 'aiims',
+    //   title: 'AIIMS',
+    //   subtitle: 'All India Institute of Medical Sciences',
+    //   description: 'Premier medical entrance exam for AIIMS institutes across India',
+    //   category: 'Medical',
+    //   examDate: 'May 2024',
+    //   duration: '3 hours 30 minutes',
+    //   totalQuestions: '200 Questions',
+    //   subjects: ['Physics', 'Chemistry', 'Biology', 'General Knowledge', 'Logical Thinking'],
+    //   difficulty: 'Very High',
+    //   attempts: '1 attempt per year',
+    //   gradient: 'from-emerald-500 to-teal-600',
+    //   bgColor: 'bg-emerald-50',
+    //   iconColor: 'text-emerald-600',
+    //   borderColor: 'border-emerald-200',
+    //   stats: {
+    //     mockTests: 42,
+    //     students: '3.2L+',
+    //     successRate: '94%'
+    //   }
+    // },
+    // {
+    //   _id: 'jipmer',
+    //   title: 'JIPMER',
+    //   subtitle: 'Jawaharlal Institute of Postgraduate Medical Education',
+    //   description: 'Entrance exam for JIPMER Puducherry and Karaikal campuses',
+    //   category: 'Medical',
+    //   examDate: 'Jun 2024',
+    //   duration: '2 hours 30 minutes',
+    //   totalQuestions: '200 Questions',
+    //   subjects: ['Physics', 'Chemistry', 'Biology', 'English & Logical Reasoning'],
+    //   difficulty: 'High',
+    //   attempts: '1 attempt per year',
+    //   gradient: 'from-blue-500 to-cyan-600',
+    //   bgColor: 'bg-blue-50',
+    //   iconColor: 'text-blue-600',
+    //   borderColor: 'border-blue-200',
+    //   stats: {
+    //     mockTests: 35,
+    //     students: '1.5L+',
+    //     successRate: '91%'
+    //   }
+    // },
+    // {
+    //   _id: 'wbneet',
+    //   title: 'WB NEET',
+    //   subtitle: 'West Bengal National Eligibility cum Entrance Test',
+    //   description: 'State counseling process for NEET qualified candidates in West Bengal',
+    //   category: 'Medical',
+    //   examDate: 'Post NEET Results',
+    //   duration: 'Counseling Process',
+    //   totalQuestions: 'Based on NEET Score',
+    //   subjects: ['NEET Score Based', 'State Quota Counseling'],
+    //   difficulty: 'Moderate',
+    //   attempts: 'Multiple Rounds',
+    //   gradient: 'from-orange-500 to-amber-600',
+    //   bgColor: 'bg-orange-50',
+    //   iconColor: 'text-orange-600',
+    //   borderColor: 'border-orange-200',
+    //   stats: {
+    //     mockTests: 28,
+    //     students: '2.1L+',
+    //     successRate: '86%'
+    //   }
+    // }
   ];
 
   // Handle navigation to exam papers page
