@@ -1,7 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const jwt = require('jsonwebtoken'); // Added missing import
+const jwt = require('jsonwebtoken');
 const User = require('./models/User');
 require('dotenv').config();
 
@@ -17,9 +17,11 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Routes
 const examRoutes = require('./routes/examRoutes');
+const paperRoutes = require('./routes/paperRoutes'); // NEW: Paper routes
 
 // API Routes
 app.use('/api/exams', examRoutes);
+app.use('/api/papers', paperRoutes); // NEW: Paper API routes
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -30,16 +32,15 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error(err));
 
 app.get('/', (req, res) => {
-  res.send('JEE Mock API running');
+  res.send('MockIQ API running');
 });
 
-// Signup - Fixed the route path (was missing '/')
+// Signup
 app.post('/signup', async (req, res) => {
   const { name, email, password } = req.body;
 
