@@ -17,12 +17,13 @@ const Engineering = () => {
   // Backend API base URL - adjust this to match your backend URL
   const API_BASE_URL = import.meta.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-  // Fetch exams data from backend
+  // Fetch exams data from backend (ONLY ENGINEERING EXAMS)
   useEffect(() => {
     const fetchExams = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${API_BASE_URL}/api/exams`);
+        // Filter by Engineering category only
+        const response = await fetch(`${API_BASE_URL}/api/exams?category=Engineering`);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -82,6 +83,7 @@ const Engineering = () => {
       title: 'JEE Main',
       subtitle: 'Joint Entrance Examination - Main',
       description: 'Gateway to NITs, IIITs, and other premier engineering colleges',
+      category: 'Engineering',
       examDate: 'Jan & Apr 2024',
       duration: '3 hours',
       totalQuestions: '90 Questions',
@@ -103,6 +105,7 @@ const Engineering = () => {
       title: 'JEE Advanced',
       subtitle: 'Joint Entrance Examination - Advanced',
       description: 'Your pathway to IITs - the most prestigious engineering institutes',
+      category: 'Engineering',
       examDate: 'May 2024',
       duration: '6 hours (2 papers)',
       totalQuestions: '54 Questions',
@@ -124,6 +127,7 @@ const Engineering = () => {
       title: 'WBJEE',
       subtitle: 'West Bengal Joint Entrance Examination',
       description: 'State-level exam for engineering and medical colleges in West Bengal',
+      category: 'Engineering',
       examDate: 'Apr 2024',
       duration: '2 hours',
       totalQuestions: '155 Questions',
