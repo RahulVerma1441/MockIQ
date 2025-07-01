@@ -2,15 +2,19 @@ const express = require('express');
 const router = express.Router();
 const {
   getAllExams,
+  getExamsByCategory,
   getExamById,
   createExam,
   updateExam,
   deleteExam,
-  seedExamsData
+  seedExamsData,
+  getCategories
 } = require('../controllers/examController');
 
 // Public routes
-router.get('/', getAllExams);
+router.get('/', getAllExams); // GET /api/exams?category=Engineering
+router.get('/categories', getCategories); // GET /api/exams/categories
+router.get('/category/:category', getExamsByCategory); // GET /api/exams/category/Engineering
 router.get('/:id', getExamById);
 
 // Admin routes (add authentication middleware when ready)
