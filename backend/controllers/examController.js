@@ -1,13 +1,24 @@
 const Exam = require('../models/Exam');
 
-// Get all exams
+// Get all exams with optional category filtering
 const getAllExams = async (req, res) => {
   try {
-    const exams = await Exam.find({ isActive: true }).sort({ createdAt: -1 });
+    const { category } = req.query;
+    
+    // Build query object
+    let query = { isActive: true };
+    
+    // Add category filter if provided
+    if (category) {
+      query.category = category;
+    }
+    
+    const exams = await Exam.find(query).sort({ createdAt: -1 });
     
     res.status(200).json({
       success: true,
       count: exams.length,
+      category: category || 'All',
       exams
     });
   } catch (error) {
@@ -15,6 +26,32 @@ const getAllExams = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching exams',
+      error: error.message
+    });
+  }
+};
+
+// Get exams by category (dedicated endpoint)
+const getExamsByCategory = async (req, res) => {
+  try {
+    const { category } = req.params;
+    
+    const exams = await Exam.find({ 
+      category: category, 
+      isActive: true 
+    }).sort({ createdAt: -1 });
+    
+    res.status(200).json({
+      success: true,
+      count: exams.length,
+      category,
+      exams
+    });
+  } catch (error) {
+    console.error('Get exams by category error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching exams by category',
       error: error.message
     });
   }
@@ -140,7 +177,7 @@ const deleteExam = async (req, res) => {
   }
 };
 
-// Seed initial exam data
+// Seed initial exam data with categories
 const seedExamsData = async (req, res) => {
   try {
     // Check if exams already exist
@@ -152,12 +189,13 @@ const seedExamsData = async (req, res) => {
       });
     }
 
-    // Default exam data to seed
-    const defaultExams = [
+    // Default ENGINEERING exam data to seed
+    const engineeringExams = [
       {
         title: 'JEE Main',
         subtitle: 'Joint Entrance Examination - Main',
         description: 'Gateway to NITs, IIITs, and other premier engineering colleges',
+        category: 'Engineering',
         examDate: 'Jan & Apr 2024',
         duration: '3 hours',
         totalQuestions: '90 Questions',
@@ -178,6 +216,7 @@ const seedExamsData = async (req, res) => {
         title: 'JEE Advanced',
         subtitle: 'Joint Entrance Examination - Advanced',
         description: 'Your pathway to IITs - the most prestigious engineering institutes',
+        category: 'Engineering',
         examDate: 'May 2024',
         duration: '6 hours (2 papers)',
         totalQuestions: '54 Questions',
@@ -198,6 +237,7 @@ const seedExamsData = async (req, res) => {
         title: 'WBJEE',
         subtitle: 'West Bengal Joint Entrance Examination',
         description: 'State-level exam for engineering and medical colleges in West Bengal',
+        category: 'Engineering',
         examDate: 'Apr 2024',
         duration: '2 hours',
         totalQuestions: '155 Questions',
@@ -216,12 +256,62 @@ const seedExamsData = async (req, res) => {
       }
     ];
 
-    const createdExams = await Exam.insertMany(defaultExams);
+    // Default MEDICAL exam data to seed
+    const medicalExams = [
+      {
+        title: 'NEET',
+        subtitle: 'National Eligibility cum Entrance Test',
+        description: 'National level medical entrance exam for MBBS and BDS admissions',
+        category: 'Medical',
+        examDate: 'May 2024',
+        duration: '3 hours 20 minutes',
+        totalQuestions: '180 Questions',
+        subjects: ['Physics', 'Chemistry', 'Biology'],
+        difficulty: 'Hard',
+        attempts: '1 attempt per year',
+        gradient: 'from-red-500 to-red-600',
+        bgColor: 'bg-red-50',
+        iconColor: 'text-red-600',
+        borderColor: 'border-red-200',
+        stats: {
+          mockTests: 50,
+          students: '18L+',
+          successRate: '82%'
+        }
+      },
+      {
+        title: 'AIIMS',
+        subtitle: 'All India Institute of Medical Sciences',
+        description: 'Entrance exam for AIIMS medical colleges across India',
+        category: 'Medical',
+        examDate: 'June 2024',
+        duration: '3 hours',
+        totalQuestions: '200 Questions',
+        subjects: ['Physics', 'Chemistry', 'Biology', 'General Knowledge'],
+        difficulty: 'Very High',
+        attempts: '1 attempt per year',
+        gradient: 'from-indigo-500 to-indigo-600',
+        bgColor: 'bg-indigo-50',
+        iconColor: 'text-indigo-600',
+        borderColor: 'border-indigo-200',
+        stats: {
+          mockTests: 42,
+          students: '5L+',
+          successRate: '95%'
+        }
+      }
+    ];
+
+    // Combine all exams
+    const allExams = [...engineeringExams, ...medicalExams];
+    const createdExams = await Exam.insertMany(allExams);
 
     res.status(201).json({
       success: true,
       message: 'Exam data seeded successfully',
       count: createdExams.length,
+      engineeringCount: engineeringExams.length,
+      medicalCount: medicalExams.length,
       exams: createdExams
     });
   } catch (error) {
@@ -234,11 +324,32 @@ const seedExamsData = async (req, res) => {
   }
 };
 
+// Get all available categories
+const getCategories = async (req, res) => {
+  try {
+    const categories = await Exam.distinct('category', { isActive: true });
+    
+    res.status(200).json({
+      success: true,
+      categories
+    });
+  } catch (error) {
+    console.error('Get categories error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching categories',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllExams,
+  getExamsByCategory,
   getExamById,
   createExam,
   updateExam,
   deleteExam,
-  seedExamsData
+  seedExamsData,
+  getCategories
 };

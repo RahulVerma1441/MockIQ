@@ -16,6 +16,13 @@ const examSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  // NEW FIELD: Category to separate engineering and medical exams
+  category: {
+    type: String,
+    enum: ['Engineering', 'Medical'],
+    required: true,
+    default: 'Engineering'
+  },
   examDate: {
     type: String,
     required: true
@@ -82,5 +89,6 @@ const examSchema = new mongoose.Schema({
 // Index for faster queries
 examSchema.index({ title: 1 });
 examSchema.index({ isActive: 1 });
+examSchema.index({ category: 1 }); // NEW INDEX for category-based queries
 
 module.exports = mongoose.model('Exam', examSchema);
