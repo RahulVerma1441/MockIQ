@@ -385,7 +385,7 @@ const ExamInterface = () => {
     // Here you would typically send the answers to your backend
     // console.log('Submitted answers:', answers);
     // console.log('Marked for review:', Array.from(markedForReview));
-    navigate('/engineering-exams/rules/test-page/test-result'); 
+    navigate('/exams/rules/test-page/test-result'); 
   };
 
   // Question statistics for current subject

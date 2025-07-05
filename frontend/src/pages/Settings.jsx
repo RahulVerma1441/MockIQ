@@ -51,11 +51,11 @@ const Settings = () => {
     updates: false
   });
   const [profile, setProfile] = useState({
-    name: 'Rahul Sharma',
-    email: 'rahul.sharma@email.com',
-    phone: '+91 98765 43210',
+    name: 'Rahul Verma',
+    email: 'verma.rahul1441v@gmail.com',
+    phone: '+91 7501999004',
     location: 'Durgapur, West Bengal',
-    birthDate: '1995-06-15',
+    birthDate: '2003-06-16',
     bio: 'Preparing for competitive exams'
   });
   const [privacy, setPrivacy] = useState({

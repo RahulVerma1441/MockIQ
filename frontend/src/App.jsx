@@ -133,7 +133,7 @@ function AppRoutes() {
             } 
           />
           <Route 
-            path="/engineering-exams/rules/test-page" 
+            path="/exams/rules/test-page" 
             element={
                 <ExamInterface />
             } 

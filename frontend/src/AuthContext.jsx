@@ -11,30 +11,39 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setisLoggedIn] = useState(false);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is already logged in
-    const authToken = localStorage.getItem('authToken');
-    if (authToken) {
-      setIsLoggedIn(true);
+    // Check if user is logged in when app starts
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    
+    if (token && userData) {
+      setisLoggedIn(true);
+      setUser(JSON.parse(userData));
     }
     setLoading(false);
   }, []);
 
-  const login = (token) => {
-    localStorage.setItem('authToken', token);
-    setIsLoggedIn(true);
+  const login = (token, userData) => {
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(userData));
+    setisLoggedIn(true);
+    setUser(userData);
   };
 
   const logout = () => {
-    localStorage.removeItem('authToken');
-    setIsLoggedIn(false);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setisLoggedIn(false);
+    setUser(null);
   };
 
   const value = {
     isLoggedIn,
+    user,
     login,
     logout,
     loading

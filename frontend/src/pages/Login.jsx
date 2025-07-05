@@ -27,33 +27,34 @@ const SlidingAuthPanel = ({ isOpen, togglePanel }) => {
     e.preventDefault();
     
     if (isSignUp) {
-      // Handle signup
+      // Handle signup (existing code)
       axios.post('http://localhost:5000/signup', formData)
         .then(response => {
           console.log('Signup Response:', response.data);
-          // After successful signup, switch to login mode
           setIsSignUp(false);
-          // Clear form data except email for convenience
           setFormData({
             name: '',
-            email: formData.email, // Keep email for login
+            email: formData.email,
             password: '',
             confirmPassword: ''
           });
-          // Optionally show a success message here
           alert('Account created successfully! Please login.');
         })
         .catch(error => {
           console.error('Signup Error:', error);
-          // Handle signup error (show error message to user)
+          alert('Signup failed. Please try again.');
         });
     } else {
-      // Handle login
-      axios.post('http://localhost:5000/login', formData)
+      // Handle login - Updated to pass user data
+      axios.post('http://localhost:5000/login', {
+        email: formData.email,
+        password: formData.password
+      })
         .then(response => {
           console.log('Login Response:', response.data);
-          // Update authentication state and store token
-          login(response.data.token); // Assuming your API returns a token
+          
+          // Pass both token and user data to login function
+          login(response.data.token, response.data.user);
           
           // Close the auth panel and navigate to dashboard
           togglePanel();
@@ -61,11 +62,10 @@ const SlidingAuthPanel = ({ isOpen, togglePanel }) => {
         })
         .catch(error => {
           console.error('Login Error:', error);
-          // Handle login error (show error message to user)
+          alert('Login failed. Please check your credentials.');
         });
     }
   };
-
   const handleTogglePanel = () => {
     togglePanel();
     setIsSignUp(false);

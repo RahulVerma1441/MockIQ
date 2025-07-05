@@ -88,41 +88,56 @@ app.post('/signup', async (req, res) => {
 
 // Login
 app.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-
   try {
-    // Validate input
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
-    }
+    const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+    // Find user by email
+    const user = await User.findByEmail(email);
     if (!user) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid credentials' 
+      });
     }
 
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+    // Check password
+    const isPasswordValid = await user.comparePassword(password);
+    if (!isPasswordValid) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid credentials' 
+      });
     }
 
+    // Generate JWT token (assuming you have jwt setup)
     const token = jwt.sign(
-      { id: user._id, email: user.email }, 
-      JWT_SECRET, 
-      { expiresIn: '1h' }
+      { userId: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
     );
-    
-    res.json({ 
-      token, 
-      user: { 
-        id: user._id, 
-        name: user.name, 
-        email: user.email 
-      } 
+
+    // Get user data without password
+    const userData = user.getPublicProfile();
+
+    res.json({
+      success: true,
+      message: 'Login successful',
+      token,
+      user: {
+        id: userData._id,
+        name: userData.name,
+        email: userData.email,
+        role: userData.role,
+        profile: userData.profile
+      }
     });
-  } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ message: 'Server error' });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error' 
+    });
   }
 });
 

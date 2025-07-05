@@ -74,7 +74,7 @@ export default function MockIQDashboard() {
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Welcome back, {mockData.student.name.split(' ')[0]}! 👋</h1>
-          <p className="text-gray-600 mt-2">Ready to crack {mockData.student.targetExam}? Let's continue your preparation journey.</p>
+          <p className="text-gray-600 mt-2">Ready to crack your Dream College? Let's continue your preparation journey.</p>
         </div>
 
         {/* Stats Grid */}
