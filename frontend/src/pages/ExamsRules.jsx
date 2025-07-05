@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Clock, 
   FileText, 
@@ -18,12 +18,11 @@ const ExamRules = () => {
   const [agreedToRules, setAgreedToRules] = useState(false);
   const [timeLeft, setTimeLeft] = useState(10);
   const [canStart, setCanStart] = useState(false);
-  const navigate= useNavigate();
-  // Navigation function - replace with your routing logic
-  
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Sample exam details - you can pass these as props
-  const examDetails = {
+  // Get exam details from navigation state
+  const examDetails = location.state || {
     examName: 'JEE Main',
     shift: 'January Shift 1',
     year: 2024,
@@ -31,10 +30,20 @@ const ExamRules = () => {
     duration: '3 hours',
     subjects: ['Physics', 'Chemistry', 'Mathematics'],
     totalQuestions: 90,
-    totalMarks: 300
+    totalMarks: 300,
+    paperId: null
   };
 
-  // Auto enter fullscreen on component mounty
+  // Check if exam details are available, if not redirect back
+  useEffect(() => {
+    if (!location.state) {
+      console.warn('No exam details found, redirecting to engineering exams page');
+      // Optionally redirect back if no exam details
+      // navigate('/engineering-exams');
+    }
+  }, [location.state, navigate]);
+
+  // Auto enter fullscreen on component mount
   useEffect(() => {
     const enterFullscreen = async () => {
       try {
@@ -68,9 +77,8 @@ const ExamRules = () => {
 
   const handleStartTest = () => {
     if (canStart && agreedToRules) {
-        navigate("/engineering-exams/rules/test-page");
-    //   alert('Starting test! This is where you would navigate to the test page.');
-    //   console.log('Test started with details:', examDetails);
+      // Pass exam details to test page
+      navigate("/engineering-exams/rules/test-page", { state: examDetails });
     }
   };
 
@@ -125,7 +133,11 @@ const ExamRules = () => {
     { label: "Paper", value: `${examDetails.shift} ${examDetails.year}`, icon: <FileText className="w-5 h-5" /> },
     { label: "Date", value: examDetails.date, icon: <Clock className="w-5 h-5" /> },
     { label: "Duration", value: examDetails.duration, icon: <Clock className="w-5 h-5" /> },
-    { label: "Subjects", value: examDetails.subjects.join(", "), icon: <Calculator className="w-5 h-5" /> }
+    { 
+      label: "Subjects", 
+      value: Array.isArray(examDetails.subjects) ? examDetails.subjects.join(", ") : examDetails.subjects || "All Subjects", 
+      icon: <Calculator className="w-5 h-5" /> 
+    }
   ];
 
   // NTA-style question status indicators
@@ -326,7 +338,7 @@ const ExamRules = () => {
                       </div>
                       <span className="text-base font-medium">{info.label}</span>
                     </div>
-                    <span className="text-base font-semibold text-gray-900 text-right">{info.value}</span>
+                    <span className="text-base font-semibold text-gray-900 text-right max-w-[50%] break-words">{info.value}</span>
                   </div>
                 ))}
               </div>

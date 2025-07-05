@@ -171,13 +171,22 @@ const EngineeringExams = () => {
       shift: `${paper.session} ${paper.shift}`,
       year: paper.year,
       date: paper.examDate,
-      duration: paper.duration,
-      subjects: paper.subjects,
-      totalQuestions: paper.totalQuestions,
-      totalMarks: paper.totalMarks,
-      instructions: paper.instructions
+      duration: paper.duration || '3 hours', // fallback if duration is not provided
+      subjects: paper.subjects || ['Physics', 'Chemistry', 'Mathematics'], // fallback subjects
+      totalQuestions: paper.totalQuestions || 90, // fallback
+      totalMarks: paper.totalMarks || 300, // fallback
+      instructions: paper.instructions || [], // additional instructions if any
+      // Additional fields that might be useful
+      session: paper.session,
+      examId: selectedExamId,
+      markingScheme: {
+        correct: 4,
+        incorrect: -1,
+        unanswered: 0
+      }
     };
     
+    console.log('Starting test with details:', examDetails);
     navigate("/engineering-exams/rules", { state: examDetails });
   };
 
