@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import logo from "../../assets/logo.svg";
+import logo from "../../assets/logo2.png";
 import SlidingAuthPanel from "../../pages/Login";
 
 export default function Header() {
@@ -16,9 +16,9 @@ export default function Header() {
           <img
             src={logo}
             alt="Logo"
-            className="w-12 h-12 rounded-full"
+            className="w-auto h-12"
           />
-          MockIQ
+          
         </div>
         <nav className="hidden md:flex gap-8 text-lg">
           <a href="#" className="hover:underline">

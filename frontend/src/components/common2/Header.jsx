@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, LogOut, Bell, Settings, ChevronDown } from 'lucide-react';
-import logo from "../../assets/logo.svg";
+import logo from "../../assets/logo2.png";
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../AuthContext';
 
@@ -37,9 +37,9 @@ const Header = () => {
               <img
                 src={logo}
                 alt="Logo"
-                className="w-12 h-12 rounded-full"
+                className="w-auto h-12"
               />
-              <span className="text-xl font-bold text-gray-900">MockIQ</span>
+              {/* <span className="text-xl font-bold text-gray-900">MockIQ</span> */}
             </div>
           </div>
           
