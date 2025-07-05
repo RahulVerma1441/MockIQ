@@ -127,6 +127,12 @@ function AppRoutes() {
             } 
           />
           <Route 
+            path="/medical-exams/rules" 
+            element={
+                <ExamRules />
+            } 
+          />
+          <Route 
             path="/engineering-exams/rules/test-page" 
             element={
                 <ExamInterface />
