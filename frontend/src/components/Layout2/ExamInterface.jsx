@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Clock, 
   FileText, 
@@ -23,7 +22,7 @@ import {
 
 const ExamInterface = () => {
   const [currentQuestion, setCurrentQuestion] = useState(1);
-  const [timeLeft, setTimeLeft] = useState(3 * 60 * 60); // 3 hours in seconds
+  const [timeLeft, setTimeLeft] = useState(0);
   const [answers, setAnswers] = useState({});
   const [markedForReview, setMarkedForReview] = useState(new Set());
   const [visitedQuestions, setVisitedQuestions] = useState(new Set([1]));
@@ -34,67 +33,17 @@ const ExamInterface = () => {
   const [examStarted, setExamStarted] = useState(false);
   const fullscreenRef = useRef(null);
   const navigate = useNavigate();
+  
+  // State for exam data from database
+  const [examDetails, setExamDetails] = useState(null);
+  const [questions, setQuestions] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Sample exam data
-  const examDetails = {
-    examName: 'JEE Main',
-    shift: 'January Shift 1',
-    year: 2024,
-    totalQuestions: 90,
-    subjects: [
-      { name: 'Physics', range: [1, 30] },
-      { name: 'Chemistry', range: [31, 60] },
-      { name: 'Mathematics', range: [61, 90] }
-    ]
-  };
-
-  // Sample questions data
-  const questions = {
-    1: {
-      subject: 'Physics',
-      question: "A particle moves in a circular path of radius 0.5 m with constant angular velocity of 2 rad/s. What is the magnitude of centripetal acceleration of the particle?",
-      options: [
-        "1.0 m/s²",
-        "2.0 m/s²",
-        "4.0 m/s²",
-        "0.5 m/s²"
-      ],
-      type: "single"
-    },
-    2: {
-      subject: 'Physics',
-      question: "Which of the following compounds has the highest boiling point?",
-      options: [
-        "CH₄ (Methane)",
-        "C₂H₆ (Ethane)",
-        "C₃H₈ (Propane)",
-        "C₄H₁₀ (Butane)"
-      ],
-      type: "single"
-    },
-    31: {
-      subject: 'Chemistry',
-      question: "Which of the following compounds has the highest boiling point?",
-      options: [
-        "CH₄ (Methane)",
-        "C₂H₆ (Ethane)",
-        "C₃H₈ (Propane)",
-        "C₄H₁₀ (Butane)"
-      ],
-      type: "single"
-    },
-    61: {
-      subject: 'Mathematics',
-      question: "If f(x) = x² + 2x + 1, then f'(x) is equal to:",
-      options: [
-        "2x + 2",
-        "x² + 2",
-        "2x + 1",
-        "x + 2"
-      ],
-      type: "single"
-    }
-  };
+  // Get exam data from navigation state or URL params
+  const location = useLocation();
+  const examData = location.state;
+  const paperId = location.state?.paperId;
 
   // Fullscreen functions
   const enterFullscreen = async () => {
@@ -113,7 +62,6 @@ const ExamInterface = () => {
       setIsFullscreen(true);
     } catch (error) {
       console.error('Failed to enter fullscreen:', error);
-      // Show user a message that fullscreen failed
       alert('Unable to enter fullscreen mode. Please manually press F11 to enter fullscreen.');
     }
   };
@@ -153,17 +101,8 @@ const ExamInterface = () => {
       
       setIsFullscreen(isCurrentlyFullscreen);
       
-      // If user exits fullscreen during exam, show warning
       if (!isCurrentlyFullscreen && examStarted) {
-        const shouldReturn = confirm(
-          'You have exited fullscreen mode. For exam security, please return to fullscreen mode. Click OK to return to fullscreen or Cancel to end the exam.'
-        );
-        
-        if (shouldReturn) {
-          enterFullscreen();
-        } else {
-          handleSubmitTest();
-        }
+        enterFullscreen();
       }
     };
 
@@ -192,26 +131,25 @@ const ExamInterface = () => {
     };
 
     const handleKeyDown = (e) => {
-      // Prevent common exit shortcuts
       if (
-        e.key === 'F5' || // Refresh
-        (e.ctrlKey && e.key === 'r') || // Ctrl+R refresh
+        e.key === 'F5' ||
+        (e.ctrlKey && e.key === 'r') ||
         (e.ctrlKey && e.key === 'R') ||
-        (e.ctrlKey && e.key === 'w') || // Ctrl+W close tab
+        (e.ctrlKey && e.key === 'w') ||
         (e.ctrlKey && e.key === 'W') ||
-        (e.ctrlKey && e.key === 't') || // Ctrl+T new tab
+        (e.ctrlKey && e.key === 't') ||
         (e.ctrlKey && e.key === 'T') ||
-        (e.ctrlKey && e.key === 'n') || // Ctrl+N new window
+        (e.ctrlKey && e.key === 'n') ||
         (e.ctrlKey && e.key === 'N') ||
-        (e.ctrlKey && e.shiftKey && e.key === 'I') || // Dev tools
+        (e.ctrlKey && e.shiftKey && e.key === 'I') ||
         (e.ctrlKey && e.shiftKey && e.key === 'i') ||
         (e.ctrlKey && e.shiftKey && e.key === 'J') ||
         (e.ctrlKey && e.shiftKey && e.key === 'j') ||
-        (e.ctrlKey && e.key === 'u') || // View source
+        (e.ctrlKey && e.key === 'u') ||
         (e.ctrlKey && e.key === 'U') ||
-        e.key === 'F12' || // Dev tools
-        (e.altKey && e.key === 'Tab') || // Alt+Tab
-        (e.altKey && e.key === 'F4') // Alt+F4
+        e.key === 'F12' ||
+        (e.altKey && e.key === 'Tab') ||
+        (e.altKey && e.key === 'F4')
       ) {
         e.preventDefault();
         e.stopPropagation();
@@ -226,18 +164,15 @@ const ExamInterface = () => {
 
     const handleVisibilityChange = () => {
       if (document.hidden && examStarted) {
-        // User switched tabs or minimized window
-        alert('Warning: You have switched away from the exam window. Please stay focused on the exam.');
+        console.log('User switched away from exam window');
       }
     };
 
-    // Add event listeners
     window.addEventListener('beforeunload', handleBeforeUnload, { capture: true });
     document.addEventListener('keydown', handleKeyDown, { capture: true });
     document.addEventListener('contextmenu', handleContextMenu);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Disable text selection
     document.body.style.userSelect = 'none';
     document.body.style.webkitUserSelect = 'none';
     document.body.style.mozUserSelect = 'none';
@@ -249,7 +184,6 @@ const ExamInterface = () => {
       document.removeEventListener('contextmenu', handleContextMenu);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       
-      // Re-enable text selection
       document.body.style.userSelect = '';
       document.body.style.webkitUserSelect = '';
       document.body.style.mozUserSelect = '';
@@ -259,13 +193,16 @@ const ExamInterface = () => {
 
   // Update current subject based on current question
   useEffect(() => {
-    const subject = examDetails.subjects.find(s => 
+    if (!examData || !examData.subject || !Array.isArray(examData.subject)) return;
+    
+    const subject = examData.subject.find(s => 
+      s.range && Array.isArray(s.range) && s.range.length >= 2 &&
       currentQuestion >= s.range[0] && currentQuestion <= s.range[1]
     );
     if (subject) {
       setCurrentSubject(subject.name);
     }
-  }, [currentQuestion]);
+  }, [currentQuestion, examData]);
 
   // Timer effect
   useEffect(() => {
@@ -274,7 +211,6 @@ const ExamInterface = () => {
     const timer = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
-          // Auto-submit when time expires
           handleSubmitTest();
           return 0;
         }
@@ -284,6 +220,188 @@ const ExamInterface = () => {
 
     return () => clearInterval(timer);
   }, [examStarted]);
+
+  // Fetch exam and question data
+  useEffect(() => {
+    const fetchExamData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // If exam data is passed from previous page
+        if (examData) {
+          setExamDetails(examData);
+          
+          // Only fetch questions if paperId exists
+          if (paperId) {
+            console.log('Fetching questions for paper:', paperId);
+            
+            try {
+              // Build the correct API URL based on your backend structure
+              const apiUrl = import.meta.env.REACT_APP_API_URL || 'http://localhost:5000';
+              const response = await fetch(`${apiUrl}/api/questions/paper/${paperId}`, {
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                  // Add any authentication headers if needed
+                  // 'Authorization': `Bearer ${token}`,
+                },
+              });
+              
+              // Enhanced error handling
+              if (!response.ok) {
+                // Check if we got HTML instead of JSON (common 404 error)
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.includes("text/html")) {
+                  throw new Error(`API endpoint not found (${response.status}). Please check if your backend server is running and the API route exists.`);
+                }
+                
+                // Try to get error message from response
+                let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                try {
+                  const errorData = await response.json();
+                  errorMessage = errorData.message || errorMessage;
+                } catch {
+                  // If we can't parse JSON, use the status text
+                }
+                throw new Error(errorMessage);
+              }
+              
+              // Check if response is JSON
+              const contentType = response.headers.get("content-type");
+              if (!contentType || !contentType.includes("application/json")) {
+                const text = await response.text();
+                throw new Error(`Server returned non-JSON response: ${text.substring(0, 200)}...`);
+              }
+              
+              const questionsData = await response.json();
+              console.log('Fetched questions successfully:', questionsData);
+              
+              // Transform questions from your API format to component format
+              const questionsMap = {};
+              questionsData.forEach(q => {
+                // Handle both the format you showed and standard format
+                const options = q.options ? 
+                  (Array.isArray(q.options) ? q.options.map(opt => opt.optionText || opt) : []) :
+                  [];
+                
+                questionsMap[q.questionNumber] = {
+                  subject: q.subject,
+                  question: q.questionText,
+                  options: options,
+                  type: q.questionType ? q.questionType.toLowerCase().replace(' ', '_') : 'single_choice',
+                  correctAnswer: q.correctAnswer || 0,
+                  explanation: q.explanation || q.solution?.steps?.join(' ') || '',
+                  marks: q.marks || 4,
+                  expectedTime: q.expectedTime || 120,
+                  // Handle numerical questions
+                  numericalRange: q.numericalRange || null
+                };
+              });
+              
+              setQuestions(questionsMap);
+            } catch (fetchError) {
+              console.warn('Failed to fetch questions from API:', fetchError);
+              // Fall back to mock data
+              console.log('Using mock data instead');
+              const mockQuestions = generateMockQuestions();
+              setQuestions(mockQuestions);
+            }
+          } else {
+            // Use mock data if no paperId
+            console.log('No paperId provided, using mock data');
+            const mockQuestions = generateMockQuestions();
+            setQuestions(mockQuestions);
+          }
+        } else {
+          // No exam data provided, use mock data
+          console.log('No exam data provided, using mock data');
+          const mockExamData = {
+            examName: "JEE Main 2024",
+            shift: "Morning Shift",
+            year: "2024",
+            duration: 180,
+            totalQuestions: 90,
+            subject: [
+              { name: "Physics", range: [1, 30] },
+              { name: "Chemistry", range: [31, 60] },
+              { name: "Mathematics", range: [61, 90] }
+            ]
+          };
+          setExamDetails(mockExamData);
+          
+          const mockQuestions = generateMockQuestions();
+          setQuestions(mockQuestions);
+        }
+        
+        // Set timer from exam data
+        if (examData?.duration) {
+          setTimeLeft(examData.duration * 60); 
+        } else {
+          setTimeLeft(3 * 60 * 60); // Default to 3 hours
+        }
+
+        console.log('examDetails.subject:', examData.subject);
+        console.log('Exam details:', examData);
+        console.log('Is array:', Array.isArray(examData.subject));
+        console.log('Subject structure:', examData.subject?.[0]);
+        
+      } catch (err) {
+        console.error('Error fetching exam data:', err);
+        setError(err.message);
+        
+        // As a last resort, try to load with mock data
+        try {
+          const mockExamData = {
+            examName: "JEE Main 2024",
+            shift: "Morning Shift",
+            year: "2024",
+            duration: 180,
+            totalQuestions: 90,
+            subject: [
+              { name: "Physics", range: [1, 30] },
+              { name: "Chemistry", range: [31, 60] },
+              { name: "Mathematics", range: [61, 90] }
+            ]
+          };
+          setExamDetails(mockExamData);
+          setQuestions(generateMockQuestions());
+          setTimeLeft(3 * 60 * 60);
+          setError(null); // Clear error since we have fallback data
+        } catch (mockError) {
+          console.error('Even mock data failed:', mockError);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchExamData();
+  }, [examData, paperId]);
+
+  // Helper function to generate mock questions
+  const generateMockQuestions = () => {
+    const mockQuestions = {};
+    for (let i = 1; i <= 90; i++) {
+      const subject = i <= 30 ? "Physics" : i <= 60 ? "Chemistry" : "Mathematics";
+      mockQuestions[i] = {
+        subject: subject,
+        question: `This is a sample ${subject} question ${i}. What is the correct answer?`,
+        options: [
+          "Option A - First choice",
+          "Option B - Second choice", 
+          "Option C - Third choice",
+          "Option D - Fourth choice"
+        ],
+        type: "single_choice",
+        correctAnswer: 0,
+        explanation: "This is a sample explanation",
+        marks: 4,
+        expectedTime: 120
+      };
+    }
+    return mockQuestions;
+  };
 
   // Format time display
   const formatTime = (seconds) => {
@@ -295,7 +413,11 @@ const ExamInterface = () => {
 
   // Get current subject questions range
   const getCurrentSubjectRange = () => {
-    const subject = examDetails.subjects.find(s => s.name === currentSubject);
+    if (!examData || !examData.subject || !Array.isArray(examData.subject)) return [1, 30];
+    
+    const subject = examData.subject.find(s => 
+      s.name === currentSubject && s.range && Array.isArray(s.range) && s.range.length >= 2
+    );
     return subject ? subject.range : [1, 30];
   };
 
@@ -331,7 +453,7 @@ const ExamInterface = () => {
   };
 
   const goNext = () => {
-    if (currentQuestion < examDetails.totalQuestions) {
+    if (examData && currentQuestion < examData.totalQuestions) {
       goToQuestion(currentQuestion + 1);
     }
   };
@@ -375,22 +497,89 @@ const ExamInterface = () => {
   };
 
   const confirmSubmit = async () => {
-    // Exit fullscreen before submitting
-    if (isFullscreen) {
-      await exitFullscreen();
+    try {
+      if (isFullscreen) {
+        await exitFullscreen();
+      }
+      
+      // Try to save answers to database
+      if (paperId) {
+        try {
+          const submissionData = {
+            paperId: paperId,
+            answers: answers,
+            markedForReview: Array.from(markedForReview),
+            timeTaken: (examData?.duration * 60) - timeLeft,
+            submittedAt: new Date()
+          };
+          
+          const apiUrl = import.meta.env.REACT_APP_API_URL || 'http://localhost:5000';
+          const response = await fetch(`${apiUrl}/api/exam/submit`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(submissionData)
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to submit exam to server');
+          }
+          
+          const result = await response.json();
+          
+          setExamStarted(false);
+          navigate('/engineering-exams/rules/test-page/test-result', { 
+            state: { 
+              submissionId: result.submissionId,
+              score: result.score,
+              totalQuestions: examData.totalQuestions,
+              answers: answers,
+              questions: questions
+            } 
+          });
+        } catch (submitError) {
+          console.warn('Failed to submit to server:', submitError);
+          // Continue with local submission
+          setExamStarted(false);
+          navigate('/engineering-exams/rules/test-page/test-result', { 
+            state: { 
+              submissionId: 'local-' + Date.now(),
+              score: 0, // Calculate locally if needed
+              totalQuestions: examData.totalQuestions,
+              answers: answers,
+              questions: questions
+            } 
+          });
+        }
+      } else {
+        // Local submission without server
+        setExamStarted(false);
+        navigate('/engineering-exams/rules/test-page/test-result', { 
+          state: { 
+            submissionId: 'local-' + Date.now(),
+            score: 0,
+            totalQuestions: examData.totalQuestions,
+            answers: answers,
+            questions: questions
+          } 
+        });
+      }
+    } catch (error) {
+      console.error('Error submitting exam:', error);
+      alert('There was an error submitting your exam. Please try again.');
     }
-    
-    setExamStarted(false);
-    // alert('Test submitted successfully!');
-    // Here you would typically send the answers to your backend
-    // console.log('Submitted answers:', answers);
-    // console.log('Marked for review:', Array.from(markedForReview));
-    navigate('/engineering-exams/rules/test-page/test-result'); 
   };
 
   // Question statistics for current subject
   const getSubjectQuestionStats = (subjectName) => {
-    const subject = examDetails.subjects.find(s => s.name === subjectName);
+    if (!examData || !examData.subject || !Array.isArray(examData.subject)) {
+      return { answered: 0, marked: 0, notAnswered: 0, notVisited: 0 };
+    }
+    
+    const subject = examData.subject.find(s => 
+      s.name === subjectName && s.range && Array.isArray(s.range) && s.range.length >= 2
+    );
     if (!subject) return { answered: 0, marked: 0, notAnswered: 0, notVisited: 0 };
 
     const [start, end] = subject.range;
@@ -405,9 +594,65 @@ const ExamInterface = () => {
     return { answered, marked, notAnswered, notVisited };
   };
 
-  const currentSubjectStats = getSubjectQuestionStats(currentSubject);
-  const currentQ = questions[currentQuestion] || questions[1];
+  const currentSubjectStats = examData ? getSubjectQuestionStats(currentSubject) : { answered: 0, marked: 0, notAnswered: 0, notVisited: 0 };
+  const currentQ = questions[currentQuestion] || questions[1] || { 
+    subject: 'Physics', 
+    question: 'Loading question...', 
+    options: ['Option A', 'Option B', 'Option C', 'Option D'], 
+    type: 'single_choice' 
+  };
   const [rangeStart, rangeEnd] = getCurrentSubjectRange();
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Loading Exam...</h2>
+          <p className="text-gray-600">Please wait while we prepare your exam</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state (only show if we couldn't load any data, including mock data)
+  if (error && (!examData || Object.keys(questions).length === 0)) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
+          <AlertTriangle className="w-16 h-16 text-red-600 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Error Loading Exam</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => navigate(-1)}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if exam data is available
+  if (!examData || Object.keys(questions).length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-yellow-100 flex items-center justify-center">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
+          <AlertTriangle className="w-16 h-16 text-yellow-600 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-900 mb-2">No Exam Data</h2>
+          <p className="text-gray-600 mb-4">Please select an exam to begin</p>
+          <button
+            onClick={() => navigate(-1)}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Show start screen if exam hasn't started
   if (!examStarted) {
@@ -416,8 +661,8 @@ const ExamInterface = () => {
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full">
           <div className="text-center mb-8">
             <Monitor className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{examDetails.examName}</h1>
-            <p className="text-lg text-gray-600">{examDetails.shift} {examDetails.year}</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{examData.examName}</h1>
+            <p className="text-lg text-gray-600">{examData.shift} {examData.year}</p>
           </div>
           
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-8">
@@ -428,8 +673,8 @@ const ExamInterface = () => {
                 <ul className="text-sm text-yellow-700 space-y-1">
                   <li>• The exam will start in fullscreen mode for security</li>
                   <li>• Do not exit fullscreen or switch tabs during the exam</li>
-                  <li>• Total duration: 3 hours</li>
-                  <li>• Total questions: {examDetails.totalQuestions}</li>
+                  <li>• Total duration: {Math.floor(timeLeft / 3600)} hours</li>
+                  <li>• Total questions: {examData.totalQuestions}</li>
                   <li>• You can navigate between questions and mark them for review</li>
                 </ul>
               </div>
@@ -448,6 +693,7 @@ const ExamInterface = () => {
     );
   }
 
+  // Rest of the component remains the same...
   return (
     <div ref={fullscreenRef} className="min-h-screen bg-gray-50 flex flex-col">
       {/* Fullscreen status indicator */}
@@ -472,8 +718,8 @@ const ExamInterface = () => {
                 {showSidebar ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">{examDetails.examName}</h1>
-                <p className="text-base text-gray-600">{examDetails.shift} {examDetails.year}</p>
+                <h1 className="text-xl font-bold text-gray-900">{examData.examName}</h1>
+                <p className="text-base text-gray-600">{examData.shift} {examData.year}</p>
               </div>
             </div>
             
@@ -506,7 +752,7 @@ const ExamInterface = () => {
                     {currentQ.subject}
                   </span>
                   <span className="text-base text-gray-600 font-medium">
-                    Question {currentQuestion} of {examDetails.totalQuestions}
+                    Question {currentQuestion} of {examData.totalQuestions}
                   </span>
                 </div>
                 <div className="flex items-center space-x-3">
@@ -592,7 +838,7 @@ const ExamInterface = () => {
                   
                   <button
                     onClick={goNext}
-                    disabled={currentQuestion === examDetails.totalQuestions}
+                    disabled={currentQuestion === examData.totalQuestions}
                     className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold text-base hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next
@@ -613,7 +859,8 @@ const ExamInterface = () => {
             <div className="mb-6">
               <h3 className="text-xl font-bold text-gray-900 mb-4">Question Palette</h3>
               <div className="grid grid-cols-3 gap-2 mb-6">
-                {examDetails.subjects.map((subject) => (
+                {Array.isArray(examData.subject) &&
+                  examData.subject.map(subject => (
                   <button
                     key={subject.name}
                     onClick={() => {
@@ -623,21 +870,22 @@ const ExamInterface = () => {
                     className={`text-center p-3 rounded-lg transition-colors ${
                       currentSubject === subject.name
                         ? (subject.name === 'Physics' ? 'bg-blue-600 text-white' :
-                           subject.name === 'Chemistry' ? 'bg-green-600 text-white' :
-                           'bg-purple-600 text-white')
+                          subject.name === 'Chemistry' ? 'bg-green-600 text-white' :
+                          'bg-purple-600 text-white')
                         : (subject.name === 'Physics' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' :
-                           subject.name === 'Chemistry' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
-                           'bg-purple-100 text-purple-700 hover:bg-purple-200')
+                          subject.name === 'Chemistry' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
+                          'bg-purple-100 text-purple-700 hover:bg-purple-200')
                     }`}
                   >
                     <div className="text-sm font-semibold">{subject.name}</div>
                     <div className="text-xs mt-1">
-                      {subject.range[0]}-{subject.range[1]}
+                      {subject.range[0]} - {subject.range[1]}
                     </div>
                   </button>
-                ))}
+              ))}
               </div>
             </div>
+
 
             {/* Question Grid - Only Current Subject */}
             <div className="flex-1 overflow-y-auto">
