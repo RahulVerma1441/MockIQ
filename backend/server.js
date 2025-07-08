@@ -17,11 +17,13 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Routes
 const examRoutes = require('./routes/examRoutes');
-const paperRoutes = require('./routes/paperRoutes'); // NEW: Paper routes
+const paperRoutes = require('./routes/paperRoutes'); 
+const questionRoutes = require('./routes/questionRoutes');
 
 // API Routes
 app.use('/api/exams', examRoutes);
-app.use('/api/papers', paperRoutes); // NEW: Paper API routes
+app.use('/api/papers', paperRoutes);
+app.use('/api/questions', questionRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
