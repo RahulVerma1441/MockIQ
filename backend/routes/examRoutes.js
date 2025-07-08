@@ -8,7 +8,9 @@ const {
   updateExam,
   deleteExam,
   seedExamsData,
-  getCategories
+  getCategories,
+  submitExam,
+  getExamResult
 } = require('../controllers/examController');
 
 // Public routes
@@ -21,6 +23,12 @@ router.get('/:id', getExamById);
 router.post('/', createExam);
 router.put('/:id', updateExam);
 router.delete('/:id', deleteExam);
+
+// Submit exam
+router.post('/submit', submitExam);
+
+// Get exam results
+router.get('/result/:submissionId', getExamResult);
 
 // Seed data route (for initial setup)
 router.post('/seed', seedExamsData);
