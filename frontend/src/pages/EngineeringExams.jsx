@@ -172,7 +172,9 @@ const EngineeringExams = () => {
       year: paper.year,
       date: paper.examDate,
       duration: paper.duration || '3 hours', // fallback if duration is not provided
-      subjects: paper.subjects || ['Physics', 'Chemistry', 'Mathematics'], // fallback subjects
+      subject: paper.subject || [{ name: "Physics", range: [1, 30] },
+                                  { name: "Chemistry", range: [31, 60] },
+                                  { name: "Mathematics", range: [61, 90] }], // fallback subjects
       totalQuestions: paper.totalQuestions || 90, // fallback
       totalMarks: paper.totalMarks || 300, // fallback
       instructions: paper.instructions || [], // additional instructions if any

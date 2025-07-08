@@ -27,8 +27,12 @@ const ExamRules = () => {
     shift: 'January Shift 1',
     year: 2024,
     date: '24 Jan 2024',
-    duration: '3 hours',
-    subjects: ['Physics', 'Chemistry', 'Mathematics'],
+    duration: '180',
+    subject: [     // Changed to object format with ranges
+      { name: "Physics", range: [1, 30] },
+      { name: "Chemistry", range: [31, 60] },
+      { name: "Mathematics", range: [61, 90] }
+    ],
     totalQuestions: 90,
     totalMarks: 300,
     paperId: null
@@ -78,7 +82,8 @@ const ExamRules = () => {
   const handleStartTest = () => {
     if (canStart && agreedToRules) {
       // Pass exam details to test page
-      navigate("/engineering-exams/rules/test-page", { state: examDetails });
+      navigate("/engineering-exams/rules/test-page", { state: examDetails,
+        paperId: examDetails.paperId || null  });
     }
   };
 
@@ -132,10 +137,10 @@ const ExamRules = () => {
     { label: "Exam", value: examDetails.examName, icon: <Book className="w-5 h-5" /> },
     { label: "Paper", value: `${examDetails.shift} ${examDetails.year}`, icon: <FileText className="w-5 h-5" /> },
     { label: "Date", value: examDetails.date, icon: <Clock className="w-5 h-5" /> },
-    { label: "Duration", value: examDetails.duration, icon: <Clock className="w-5 h-5" /> },
+    { label: "Duration", value: `${examDetails.duration} mins`, icon: <Clock className="w-5 h-5" /> },
     { 
       label: "Subjects", 
-      value: Array.isArray(examDetails.subjects) ? examDetails.subjects.join(", ") : examDetails.subjects || "All Subjects", 
+      value: Array.isArray(examDetails.subject)?examDetails.subject.map(sub => sub.name).join(", "):(examDetails.subject?.name || "All Subjects"), 
       icon: <Calculator className="w-5 h-5" /> 
     }
   ];
