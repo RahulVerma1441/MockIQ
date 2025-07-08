@@ -28,7 +28,6 @@ const paperSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
-    // Common sessions for both engineering and medical exams
     enum: ['January', 'February', 'March', 'April', 'May', 'June', 
            'July', 'August', 'September', 'October', 'November', 'December']
   },
@@ -37,39 +36,50 @@ const paperSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true
-    // Examples: 'Shift 1', 'Shift 2', 'Paper 1', 'Paper 2', 'Phase 1', 'Phase 2', 'Single Phase'
   },
 
   // Exam date information
   examDate: {
-    type: String, // Format: "24 Jan 2024"
+    type: String,
     required: true
   },
 
   // Paper timing
   duration: {
-    type: String, // Format: "3 hours", "3 hours 20 minutes"
+    type: Number, // Duration in minutes for easier calculations
     required: true
   },
 
   startTime: {
-    type: String, // Format: "09:00 AM"
+    type: String,
     default: null
   },
 
   endTime: {
-    type: String, // Format: "12:00 PM"
+    type: String,
     default: null
   },
 
   // Paper structure
-  subjects: [{
-    type: String,
-    required: true
-    // Engineering: ['Physics', 'Chemistry', 'Mathematics']
-    // Medical: ['Physics', 'Chemistry', 'Biology']
-    // NEET PG: ['Pre-clinical', 'Para-clinical', 'Clinical']
-  }],
+  subject: [
+    {
+      name: {
+        type: String,
+        required: true,
+        enum: ['Physics', 'Chemistry', 'Mathematics', 'Biology', 'General Aptitude', 'Engineering Mathematics']
+      },
+      range: {
+        type: [Number],
+        required: true,
+        validate: {
+          validator: function(arr) {
+            return arr.length === 2 && arr[0] <= arr[1];
+          },
+          message: 'Range must be an array of exactly 2 numbers [start, end] where start <= end'
+        }
+      }
+    }
+  ],
 
   totalQuestions: {
     type: Number,
@@ -118,7 +128,6 @@ const paperSchema = new mongoose.Schema({
   languages: [{
     type: String,
     default: ['English']
-    // Common languages: ['English', 'Hindi', 'Bengali', 'Tamil', etc.]
   }],
 
   // Instructions and rules
@@ -144,34 +153,32 @@ const paperSchema = new mongoose.Schema({
 
     allowedItems: [{
       type: String
-      // Examples: ['Calculator', 'Rough Sheets', 'Scale']
     }],
 
     prohibitedItems: [{
       type: String
-      // Examples: ['Mobile Phone', 'Smart Watch', 'Books']
     }]
   },
 
   // Paper content and files
   paperContent: {
     questionPaperUrl: {
-      type: String, // URL to question paper PDF
+      type: String,
       default: null
     },
     
     answerKeyUrl: {
-      type: String, // URL to answer key PDF
+      type: String,
       default: null
     },
     
     solutionUrl: {
-      type: String, // URL to detailed solutions PDF
+      type: String,
       default: null
     },
 
     analysisUrl: {
-      type: String, // URL to paper analysis PDF
+      type: String,
       default: null
     }
   },
@@ -189,6 +196,13 @@ const paperSchema = new mongoose.Schema({
       min: 0
     },
 
+    averagePercentile: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100
+    },
+
     highestScore: {
       type: Number,
       default: 0,
@@ -202,12 +216,12 @@ const paperSchema = new mongoose.Schema({
     },
 
     averageTime: {
-      type: Number, // in minutes
+      type: Number,
       default: 0
     },
 
     completionRate: {
-      type: Number, // percentage
+      type: Number,
       default: 0,
       min: 0,
       max: 100
@@ -225,15 +239,45 @@ const paperSchema = new mongoose.Schema({
         default: 0,
         min: 0,
         max: 100
+      },
+      averageTime: {
+        type: Number,
+        default: 0
       }
+    }],
+
+    // Difficulty-wise stats
+    difficultyStats: [{
+      difficulty: {
+        type: String,
+        enum: ['Easy', 'Medium', 'Hard']
+      },
+      totalQuestions: Number,
+      averageAccuracy: Number,
+      averageTime: Number
     }]
+  },
+
+  // Leaderboard configuration
+  leaderboard: {
+    isEnabled: {
+      type: Boolean,
+      default: true
+    },
+    maxEntries: {
+      type: Number,
+      default: 100
+    },
+    showRealNames: {
+      type: Boolean,
+      default: false
+    }
   },
 
   // Paper metadata
   tags: [{
     type: String,
     trim: true
-    // Examples: ['important', 'trending', 'difficult', 'must-solve']
   }],
 
   // Premium and access control
@@ -276,7 +320,7 @@ const paperSchema = new mongoose.Schema({
     }],
 
     thumbnail: {
-      type: String, // URL to thumbnail image
+      type: String,
       default: null
     }
   },
@@ -306,13 +350,13 @@ const paperSchema = new mongoose.Schema({
     default: null
   },
 
-  // Questions reference (if questions are stored separately)
+  // Questions reference
   questions: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Question'
   }],
 
-  // Paper versions (for updates and revisions)
+  // Paper versions
   version: {
     type: Number,
     default: 1,
@@ -352,21 +396,14 @@ paperSchema.virtual('formattedTitle').get(function() {
   return `${this.session} ${this.shift} ${this.year}`;
 });
 
-// Virtual for duration in minutes
-paperSchema.virtual('durationInMinutes').get(function() {
-  // Parse duration string like "3 hours 20 minutes" to total minutes
-  const parts = this.duration.toLowerCase().split(' ');
-  let totalMinutes = 0;
-  
-  for (let i = 0; i < parts.length; i++) {
-    if (parts[i] === 'hour' || parts[i] === 'hours') {
-      totalMinutes += parseInt(parts[i-1]) * 60;
-    } else if (parts[i] === 'minute' || parts[i] === 'minutes') {
-      totalMinutes += parseInt(parts[i-1]);
-    }
+// Virtual for duration in hours and minutes
+paperSchema.virtual('formattedDuration').get(function() {
+  const hours = Math.floor(this.duration / 60);
+  const minutes = this.duration % 60;
+  if (hours > 0) {
+    return minutes > 0 ? `${hours} hour${hours > 1 ? 's' : ''} ${minutes} minute${minutes > 1 ? 's' : ''}` : `${hours} hour${hours > 1 ? 's' : ''}`;
   }
-  
-  return totalMinutes;
+  return `${minutes} minute${minutes > 1 ? 's' : ''}`;
 });
 
 // Instance method to check if paper is accessible
@@ -387,12 +424,14 @@ paperSchema.methods.getSummary = function() {
     shift: this.shift,
     examDate: this.examDate,
     duration: this.duration,
+    formattedDuration: this.formattedDuration,
     subjects: this.subjects,
     totalQuestions: this.totalQuestions,
     totalMarks: this.totalMarks,
     difficulty: this.difficulty,
     isPremium: this.isPremium,
-    totalAttempts: this.statistics.totalAttempts
+    totalAttempts: this.statistics.totalAttempts,
+    averageScore: this.statistics.averageScore
   };
 };
 

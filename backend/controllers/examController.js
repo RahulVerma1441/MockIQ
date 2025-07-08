@@ -1,4 +1,8 @@
 const Exam = require('../models/Exam');
+const Paper = require('../models/Paper');
+const Question = require('../models/Question');
+const Submission = require('../models/Submission');
+
 
 // Get all exams with optional category filtering
 const getAllExams = async (req, res) => {
@@ -343,6 +347,83 @@ const getCategories = async (req, res) => {
   }
 };
 
+// Submit exam
+const submitExam = async (req, res) => {
+  try {
+    const { paperId, answers, markedForReview, timeTaken } = req.body;
+    
+    // Get paper and questions
+    const paper = await Paper.findById(paperId);
+    if (!paper) {
+      return res.status(404).json({ message: 'Paper not found' });
+    }
+    
+    const questions = await Question.find({ 
+      paperId: paperId, 
+      isActive: true 
+    });
+    
+    // Calculate score
+    let score = 0;
+    let totalQuestions = questions.length;
+    
+    questions.forEach(question => {
+      const userAnswer = answers[question.questionNumber];
+      if (userAnswer) {
+        const result = question.checkAnswer(userAnswer);
+        if (result.isCorrect) {
+          score += question.marks.positive;
+        } else {
+          score += question.marks.negative;
+        }
+      }
+    });
+    
+    // Create submission
+    const submission = new Submission({
+      paperId,
+      answers,
+      markedForReview,
+      timeTaken,
+      score,
+      totalQuestions,
+      // userId: req.user?.id, // Add if you have authentication
+    });
+    
+    await submission.save();
+    
+    res.json({
+      submissionId: submission._id,
+      score,
+      totalQuestions,
+      message: 'Exam submitted successfully'
+    });
+    
+  } catch (error) {
+    console.error('Error submitting exam:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// Get exam result
+const getExamResult = async (req, res) => {
+  try {
+    const { submissionId } = req.params;
+    
+    const submission = await Submission.findById(submissionId)
+      .populate('paperId');
+    
+    if (!submission) {
+      return res.status(404).json({ message: 'Submission not found' });
+    }
+    
+    res.json(submission);
+  } catch (error) {
+    console.error('Error fetching exam result:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 module.exports = {
   getAllExams,
   getExamsByCategory,
@@ -351,5 +432,7 @@ module.exports = {
   updateExam,
   deleteExam,
   seedExamsData,
-  getCategories
+  getCategories,
+  submitExam,
+  getExamResult
 };

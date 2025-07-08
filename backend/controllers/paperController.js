@@ -164,16 +164,6 @@ const getPaperById = async (req, res) => {
       });
     }
 
-    // Check if paper is accessible (you can add user-based logic here)
-    // const isAccessible = paper.isAccessible(req.user);
-    // if (!isAccessible) {
-    //   return res.status(403).json({
-    //     success: false,
-    //     message: 'Access denied to this paper',
-    //     data: null
-    //   });
-    // }
-
     res.json({
       success: true,
       message: 'Paper fetched successfully',
@@ -308,7 +298,7 @@ const createPaper = async (req, res) => {
     const paperData = req.body;
 
     // Validate required fields
-    const requiredFields = ['examId', 'title', 'year', 'session', 'shift', 'examDate', 'duration', 'subjects', 'totalQuestions', 'totalMarks'];
+    const requiredFields = ['examId', 'title', 'year', 'session', 'shift', 'examDate', 'duration', 'subject', 'totalQuestions', 'totalMarks'];
     const missingFields = requiredFields.filter(field => !paperData[field]);
     
     if (missingFields.length > 0) {
@@ -357,6 +347,310 @@ const createPaper = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error creating paper',
+      error: error.message,
+      data: null
+    });
+  }
+};
+
+// Update paper by ID (Complete update)
+const updatePaper = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    // Validate paper ID
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Paper ID is required',
+        data: null
+      });
+    }
+
+    // Check if paper exists
+    const existingPaper = await Paper.findById(id);
+    if (!existingPaper) {
+      return res.status(404).json({
+        success: false,
+        message: 'Paper not found',
+        data: null
+      });
+    }
+
+    // If examId is being updated, validate the new exam exists
+    if (updateData.examId && updateData.examId !== existingPaper.examId.toString()) {
+      if (updateData.subjects) {
+        existingPaper.subjects = []; // Clear the existing subjects field
+      }
+      const exam = await Exam.findById(updateData.examId);
+      if (!exam) {
+        return res.status(404).json({
+          success: false,
+          message: 'Exam not found for the provided examId',
+          data: null
+        });
+      }
+    }
+
+    // Store previous version before update
+    const previousVersion = {
+      version: existingPaper.version,
+      createdAt: existingPaper.updatedAt || existingPaper.createdAt,
+      changes: req.body.changeLog || 'Updated paper data'
+    };
+
+    // Add to previous versions array
+    if (!existingPaper.previousVersions) {
+      existingPaper.previousVersions = [];
+    }
+    existingPaper.previousVersions.push(previousVersion);
+
+    // Remove sensitive fields that shouldn't be updated directly
+    const restrictedFields = ['_id', '__v', 'createdAt', 'updatedAt', 'version', 'previousVersions'];
+    restrictedFields.forEach(field => {
+      if (updateData[field]) {
+        delete updateData[field];
+      }
+    });
+
+    // Force overwrite of incompatible fields like subjects
+    if (updateData.subjects) {
+      existingPaper.subjects = []; // Clear the array to avoid type conflicts
+    }
+
+    // Update the paper
+    const updatedPaper = await Paper.findByIdAndUpdate(
+      id,
+      {
+        ...updateData,
+        previousVersions: existingPaper.previousVersions
+      },
+      {
+        new: true, // Return the updated document
+        runValidators: true, // Run schema validators
+        context: 'query'
+      }
+    ).populate('examId', 'title category subtitle')
+     .populate('relatedPapers', 'title year session shift');
+
+    res.json({
+      success: true,
+      message: 'Paper updated successfully',
+      data: updatedPaper
+    });
+
+  } catch (error) {
+    console.error('Error updating paper:', error);
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        error: validationErrors.join(', '),
+        data: null
+      });
+    }
+
+    // Handle cast errors (invalid ObjectId)
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid paper ID format',
+        error: error.message,
+        data: null
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Error updating paper',
+      error: error.message,
+      data: null
+    });
+  }
+};
+
+// Partial update paper (PATCH method)
+const partialUpdatePaper = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    // Validate paper ID
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Paper ID is required',
+        data: null
+      });
+    }
+
+    // Check if paper exists
+    const existingPaper = await Paper.findById(id);
+    if (!existingPaper) {
+      return res.status(404).json({
+        success: false,
+        message: 'Paper not found',
+        data: null
+      });
+    }
+
+    // Validate specific fields if they're being updated
+    if (updateData.examId) {
+      const exam = await Exam.findById(updateData.examId);
+      if (!exam) {
+        return res.status(404).json({
+          success: false,
+          message: 'Exam not found for the provided examId',
+          data: null
+        });
+      }
+    }
+
+    // Remove sensitive fields
+    const restrictedFields = ['_id', '__v', 'createdAt', 'updatedAt', 'version', 'previousVersions'];
+    restrictedFields.forEach(field => {
+      if (updateData[field]) {
+        delete updateData[field];
+      }
+    });
+
+    // Update only provided fields
+    const updatedPaper = await Paper.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      {
+        new: true,
+        runValidators: true,
+        context: 'query'
+      }
+    ).populate('examId', 'title category subtitle');
+
+    res.json({
+      success: true,
+      message: 'Paper updated successfully',
+      data: updatedPaper,
+      updatedFields: Object.keys(updateData)
+    });
+
+  } catch (error) {
+    console.error('Error partially updating paper:', error);
+    
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        error: validationErrors.join(', '),
+        data: null
+      });
+    }
+
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid paper ID format',
+        error: error.message,
+        data: null
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Error updating paper',
+      error: error.message,
+      data: null
+    });
+  }
+};
+
+// Toggle paper status (active/inactive)
+const togglePaperStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const paper = await Paper.findById(id);
+    if (!paper) {
+      return res.status(404).json({
+        success: false,
+        message: 'Paper not found',
+        data: null
+      });
+    }
+
+    paper.isActive = !paper.isActive;
+    await paper.save();
+
+    res.json({
+      success: true,
+      message: `Paper ${paper.isActive ? 'activated' : 'deactivated'} successfully`,
+      data: {
+        id: paper._id,
+        isActive: paper.isActive
+      }
+    });
+
+  } catch (error) {
+    console.error('Error toggling paper status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error toggling paper status',
+      error: error.message,
+      data: null
+    });
+  }
+};
+
+// Update paper moderation status
+const updateModerationStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { moderationStatus, moderationNotes, moderatedBy } = req.body;
+
+    // Validate moderation status
+    const validStatuses = ['pending', 'approved', 'rejected', 'under_review'];
+    if (!validStatuses.includes(moderationStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid moderation status',
+        data: null
+      });
+    }
+
+    const paper = await Paper.findById(id);
+    if (!paper) {
+      return res.status(404).json({
+        success: false,
+        message: 'Paper not found',
+        data: null
+      });
+    }
+
+    paper.moderationStatus = moderationStatus;
+    if (moderationNotes) paper.moderationNotes = moderationNotes;
+    if (moderatedBy) paper.moderatedBy = moderatedBy;
+
+    await paper.save();
+
+    res.json({
+      success: true,
+      message: 'Moderation status updated successfully',
+      data: {
+        id: paper._id,
+        moderationStatus: paper.moderationStatus,
+        moderationNotes: paper.moderationNotes,
+        moderatedBy: paper.moderatedBy
+      }
+    });
+
+  } catch (error) {
+    console.error('Error updating moderation status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating moderation status',
       error: error.message,
       data: null
     });
@@ -449,5 +743,9 @@ module.exports = {
   getPopularPapers,
   getPapersGroupedByYear,
   createPaper,
-  updatePaperStats
+  updatePaperStats,
+  updatePaper,
+  partialUpdatePaper,
+  togglePaperStatus,
+  updateModerationStatus
 };
