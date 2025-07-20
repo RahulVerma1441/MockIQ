@@ -322,28 +322,44 @@ questionSchema.methods.checkAnswer = function(userAnswer) {
   const correctAnswer = this.correctAnswer;
   const questionType = this.questionType;
   
-  if (!userAnswer || userAnswer.trim() === '') {
+  // Handle null, undefined, or empty values
+  if (userAnswer === null || userAnswer === undefined || userAnswer === '') {
+    return { isCorrect: false, type: 'unattempted' };
+  }
+  
+  // Convert userAnswer to string if it's not already
+  const userAnswerStr = String(userAnswer);
+  
+  // Check if the string version is empty after trimming
+  if (userAnswerStr.trim() === '') {
     return { isCorrect: false, type: 'unattempted' };
   }
   
   switch (questionType) {
     case 'Single Correct':
       return { 
-        isCorrect: userAnswer.toUpperCase() === correctAnswer.toUpperCase(),
-        type: userAnswer.toUpperCase() === correctAnswer.toUpperCase() ? 'correct' : 'wrong'
+        isCorrect: userAnswerStr.toUpperCase() === String(correctAnswer).toUpperCase(),
+        type: userAnswerStr.toUpperCase() === String(correctAnswer).toUpperCase() ? 'correct' : 'wrong'
       };
     
     case 'Multiple Correct':
-      const userAnswers = userAnswer.split(',').map(ans => ans.trim().toUpperCase()).sort();
-      const correctAnswers = correctAnswer.split(',').map(ans => ans.trim().toUpperCase()).sort();
+      // Handle arrays directly or convert string to array
+      let userAnswers;
+      if (Array.isArray(userAnswer)) {
+        userAnswers = userAnswer.map(ans => String(ans).trim().toUpperCase()).sort();
+      } else {
+        userAnswers = userAnswerStr.split(',').map(ans => ans.trim().toUpperCase()).sort();
+      }
+      
+      const correctAnswers = String(correctAnswer).split(',').map(ans => ans.trim().toUpperCase()).sort();
       const isCorrect = JSON.stringify(userAnswers) === JSON.stringify(correctAnswers);
       return { isCorrect, type: isCorrect ? 'correct' : 'wrong' };
     
     case 'Numerical':
     case 'Integer':
     case 'Decimal':
-      const userNum = parseFloat(userAnswer);
-      const correctNum = parseFloat(correctAnswer);
+      const userNum = parseFloat(userAnswerStr);
+      const correctNum = parseFloat(String(correctAnswer));
       
       if (isNaN(userNum) || isNaN(correctNum)) {
         return { isCorrect: false, type: 'wrong' };
