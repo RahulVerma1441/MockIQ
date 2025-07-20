@@ -3,7 +3,6 @@ const Paper = require('../models/Paper');
 const Question = require('../models/Question');
 const Submission = require('../models/Submission');
 
-
 // Get all exams with optional category filtering
 const getAllExams = async (req, res) => {
   try {
@@ -347,61 +346,277 @@ const getCategories = async (req, res) => {
   }
 };
 
-// Submit exam
+// Simplified calculateScoreAndAnalysis function - Optimized version
+const calculateScoreAndAnalysis = (answers, questions, markedForReview = []) => {
+  let totalScore = 0;
+  let correctAnswers = 0;
+  let incorrectAnswers = 0;
+  let unattempted = 0;
+  const subjects = {};
+  
+  // Create a map of questions for O(1) lookup
+  const questionMap = {};
+  questions.forEach(q => {
+    questionMap[q.questionNumber] = q;
+    // Initialize subject tracking
+    const subject = q.subject || 'General';
+    if (!subjects[subject]) {
+      subjects[subject] = {
+        correct: 0,
+        incorrect: 0,
+        unattempted: 0,
+        total: 0,
+        marks: 0,
+        accuracy: 0
+      };
+    }
+    subjects[subject].total++;
+  });
+  
+  // Track which questions have been processed
+  const processedQuestions = new Set();
+  
+  // Process all answered questions (only iterate over answers)
+  Object.entries(answers).forEach(([questionNumber, userAnswer]) => {
+    const qNum = parseInt(questionNumber);
+    const question = questionMap[qNum];
+    
+    if (!question) {
+      console.warn(`Question ${qNum} not found in database`);
+      return;
+    }
+    
+    processedQuestions.add(qNum);
+    const subject = question.subject || 'General';
+    
+    // Check if answer is empty (unattempted)
+    if (userAnswer === null || userAnswer === undefined || userAnswer === '' || 
+        (typeof userAnswer === 'string' && userAnswer.trim() === '')) {
+      unattempted++;
+      subjects[subject].unattempted++;
+      return;
+    }
+    
+    // Question is attempted - check if correct
+    let isCorrect = false;
+    const correctAnswer = String(question.correctAnswer).trim();
+    const userAnswerStr = String(userAnswer).trim();
+    
+    switch (question.questionType) {
+      case 'Single Correct':
+        isCorrect = userAnswerStr.toUpperCase() === correctAnswer.toUpperCase();
+        break;
+        
+      case 'Multiple Correct':
+        const userOptions = userAnswerStr.toUpperCase().split(',')
+          .map(opt => opt.trim())
+          .filter(opt => opt !== '')
+          .sort();
+        const correctOptions = correctAnswer.toUpperCase().split(',')
+          .map(opt => opt.trim())
+          .filter(opt => opt !== '')
+          .sort();
+        isCorrect = JSON.stringify(userOptions) === JSON.stringify(correctOptions);
+        break;
+        
+      case 'Integer':
+        const userInt = parseInt(userAnswerStr);
+        const correctInt = parseInt(correctAnswer);
+        if (!isNaN(userInt) && !isNaN(correctInt)) {
+          isCorrect = userInt === correctInt;
+        }
+        break;
+        
+      case 'Numerical':
+      case 'Decimal':
+        const userNum = parseFloat(userAnswerStr);
+        const correctNum = parseFloat(correctAnswer);
+        
+        if (!isNaN(userNum) && !isNaN(correctNum)) {
+          if (question.numericalRange && question.numericalRange.tolerance) {
+            const tolerance = question.numericalRange.tolerance;
+            const diff = Math.abs(userNum - correctNum);
+            const maxDiff = Math.abs(correctNum) * (tolerance / 100);
+            isCorrect = diff <= maxDiff;
+          } else if (question.numericalRange && 
+                     question.numericalRange.min !== null && 
+                     question.numericalRange.max !== null) {
+            isCorrect = userNum >= question.numericalRange.min && 
+                       userNum <= question.numericalRange.max;
+          } else {
+            isCorrect = question.questionType === 'Integer' 
+              ? userNum === correctNum 
+              : Math.abs(userNum - correctNum) < 0.01;
+          }
+        }
+        break;
+        
+      default:
+        isCorrect = userAnswerStr.toUpperCase() === correctAnswer.toUpperCase();
+        break;
+    }
+    
+    // Update scores
+    const positiveMarks = question.marks?.positive || 4;
+    const negativeMarks = question.marks?.negative || -1;
+    
+    if (isCorrect) {
+      correctAnswers++;
+      subjects[subject].correct++;
+      totalScore += positiveMarks;
+      subjects[subject].marks += positiveMarks;
+    } else {
+      incorrectAnswers++;
+      subjects[subject].incorrect++;
+      totalScore += negativeMarks;
+      subjects[subject].marks += negativeMarks;
+    }
+  });
+  
+  // Process marked for review questions that weren't answered
+  markedForReview.forEach(questionNumber => {
+    const qNum = parseInt(questionNumber);
+    // Only count as unattempted if not already processed
+    if (!processedQuestions.has(qNum)) {
+      const question = questionMap[qNum];
+      if (question) {
+        const subject = question.subject || 'General';
+        unattempted++;
+        subjects[subject].unattempted++;
+        processedQuestions.add(qNum);
+      }
+    }
+  });
+  
+  // Calculate remaining unattempted questions
+  const totalProcessed = processedQuestions.size;
+  const remainingUnattempted = questions.length - totalProcessed;
+  unattempted += remainingUnattempted;
+  
+  // Distribute remaining unattempted questions proportionally to subjects
+  if (remainingUnattempted > 0) {
+    Object.keys(subjects).forEach(subject => {
+      const subjectQuestions = questions.filter(q => (q.subject || 'General') === subject);
+      const subjectProcessed = subjectQuestions.filter(q => processedQuestions.has(q.questionNumber)).length;
+      const subjectUnattempted = subjectQuestions.length - subjectProcessed;
+      subjects[subject].unattempted += subjectUnattempted;
+    });
+  }
+  
+  // Calculate accuracies
+  Object.keys(subjects).forEach(subject => {
+    const attempted = subjects[subject].correct + subjects[subject].incorrect;
+    subjects[subject].accuracy = attempted > 0 
+      ? parseFloat(((subjects[subject].correct / attempted) * 100).toFixed(2))
+      : 0;
+    subjects[subject].marks = Math.max(0, subjects[subject].marks);
+  });
+  
+  // Ensure total score doesn't go below 0
+  totalScore = Math.max(0, totalScore);
+  
+  // Calculate overall statistics
+  const totalAttempted = correctAnswers + incorrectAnswers;
+  const overallAccuracy = totalAttempted > 0 
+    ? parseFloat(((correctAnswers / totalAttempted) * 100).toFixed(2))
+    : 0;
+  
+  return {
+    scoreData: {
+      totalScore,
+      correctAnswers,
+      incorrectAnswers,
+      unattempted,
+      totalQuestions: questions.length,
+      attempted: totalAttempted,
+      accuracy: overallAccuracy
+    },
+    subjectWiseData: subjects
+  };
+};
+
+// Updated submitExam function
 const submitExam = async (req, res) => {
   try {
     const { paperId, answers, markedForReview, timeTaken } = req.body;
     
-    // Get paper and questions
-    const paper = await Paper.findById(paperId);
-    if (!paper) {
-      return res.status(404).json({ message: 'Paper not found' });
+    // Validate input
+    if (!paperId || !answers) {
+      return res.status(400).json({
+        success: false,
+        message: 'Paper ID and answers are required'
+      });
     }
     
+    if (typeof answers !== 'object' || Array.isArray(answers)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Answers must be an object with question numbers as keys'
+      });
+    }
+    
+    // Get paper
+    const paper = await Paper.findById(paperId);
+    if (!paper) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Paper not found' 
+      });
+    }
+    
+    // Get all questions for this paper
     const questions = await Question.find({ 
       paperId: paperId, 
       isActive: true 
-    });
+    }).sort({ questionNumber: 1 });
     
-    // Calculate score
-    let score = 0;
-    let totalQuestions = questions.length;
+    if (questions.length === 0) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'No questions found for this paper' 
+      });
+    }
     
-    questions.forEach(question => {
-      const userAnswer = answers[question.questionNumber];
-      if (userAnswer) {
-        const result = question.checkAnswer(userAnswer);
-        if (result.isCorrect) {
-          score += question.marks.positive;
-        } else {
-          score += question.marks.negative;
-        }
-      }
-    });
+    // Calculate score and analysis
+    const { scoreData, subjectWiseData } = calculateScoreAndAnalysis(answers, questions, markedForReview);
     
     // Create submission
-    const submission = new Submission({
+    const submissionData = {
       paperId,
       answers,
-      markedForReview,
-      timeTaken,
-      score,
-      totalQuestions,
-      // userId: req.user?.id, // Add if you have authentication
-    });
+      markedForReview: markedForReview || [],
+      timeTaken: timeTaken || 0,
+      score: scoreData.totalScore,
+      totalQuestions: scoreData.totalQuestions,
+      attempted: scoreData.attempted,
+      correctAnswers: scoreData.correctAnswers,
+      incorrectAnswers: scoreData.incorrectAnswers,
+      unattempted: scoreData.unattempted,
+      accuracy: scoreData.accuracy,
+      scoreData,
+      subjectWiseData,
+      submittedAt: new Date()
+    };
     
-    await submission.save();
+    const submission = new Submission(submissionData);
+    const savedSubmission = await submission.save();
     
-    res.json({
-      submissionId: submission._id,
-      score,
-      totalQuestions,
+    // Return response
+    res.status(200).json({
+      success: true,
+      submissionId: savedSubmission._id,
+      scoreData: scoreData,
+      subjectWiseData: subjectWiseData,
       message: 'Exam submitted successfully'
     });
     
   } catch (error) {
     console.error('Error submitting exam:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ 
+      success: false,
+      message: 'Error submitting exam', 
+      error: error.message
+    });
   }
 };
 
@@ -414,13 +629,23 @@ const getExamResult = async (req, res) => {
       .populate('paperId');
     
     if (!submission) {
-      return res.status(404).json({ message: 'Submission not found' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'Submission not found' 
+      });
     }
     
-    res.json(submission);
+    res.status(200).json({
+      success: true,
+      submission
+    });
   } catch (error) {
     console.error('Error fetching exam result:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ 
+      success: false,
+      message: 'Error fetching exam result', 
+      error: error.message 
+    });
   }
 };
 

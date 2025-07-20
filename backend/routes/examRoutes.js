@@ -10,7 +10,8 @@ const {
   seedExamsData,
   getCategories,
   submitExam,
-  getExamResult
+  getExamResult,
+  calculateScoreAndAnalysis
 } = require('../controllers/examController');
 
 // Public routes
