@@ -491,86 +491,111 @@ const ExamInterface = () => {
       return newAnswers;
     });
   };
+  
+const handleSubmitTest = () => {
+  setShowSubmitConfirm(true);
+};
 
-  const handleSubmitTest = () => {
-    setShowSubmitConfirm(true);
-  };
-
-  const confirmSubmit = async () => {
-    try {
-      if (isFullscreen) {
-        await exitFullscreen();
-      }
+const confirmSubmit = async () => {
+  try {
+    if (isFullscreen) {
+      await exitFullscreen();
+    }
+    
+    // Calculate time taken
+    const timeTaken = (examData?.duration * 60) - timeLeft;
+    
+    // Convert numerical answers to letters before sending to backend
+    const convertAnswersToLetters = (answers) => {
+      const letterMapping = {
+        0: 'A', 1: 'B', 2: 'C', 3: 'D',
+      };
       
-      // Try to save answers to database
-      if (paperId) {
-        try {
-          const submissionData = {
-            paperId: paperId,
-            answers: answers,
-            markedForReview: Array.from(markedForReview),
-            timeTaken: (examData?.duration * 60) - timeLeft,
-            submittedAt: new Date()
-          };
-          
-          const apiUrl = import.meta.env.REACT_APP_API_URL || 'http://localhost:5000';
-          const response = await fetch(`${apiUrl}/api/exam/submit`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(submissionData)
-          });
-          
-          if (!response.ok) {
-            throw new Error('Failed to submit exam to server');
-          }
-          
-          const result = await response.json();
-          
+      const convertedAnswers = {};
+      
+      Object.keys(answers).forEach(questionNum => {
+        const answer = answers[questionNum];
+        
+        if (answer === null || answer === undefined || answer === '') {
+          convertedAnswers[questionNum] = '';
+        } else if (Array.isArray(answer)) {
+          // For multiple correct questions
+          convertedAnswers[questionNum] = answer
+            .map(a => letterMapping[a] || String(a))
+            .join(',');
+        } else {
+          // For single correct questions
+          convertedAnswers[questionNum] = letterMapping[answer] || String(answer);
+        }
+      });
+      
+      return convertedAnswers;
+    };
+    
+    // Convert answers to letter format
+    const convertedAnswers = convertAnswersToLetters(answers);
+    
+    console.log('Original answers:', answers);
+    console.log('Converted answers:', convertedAnswers);
+    
+    // Submit to backend
+    if (paperId) {
+      try {
+        const submissionData = {
+          paperId: paperId,
+          answers: convertedAnswers,
+          markedForReview: Array.from(markedForReview),
+          timeTaken: timeTaken
+        };
+        
+        console.log('Sending to server:', submissionData);
+        
+        const apiUrl = import.meta.env.REACT_APP_API_URL || 'http://localhost:5000';
+        const response = await fetch(`${apiUrl}/api/exams/submit`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(submissionData)
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Server response:', errorText);
+          throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log('Server result:', result);
+        
+        if (result.success) {
           setExamStarted(false);
           navigate('/engineering-exams/rules/test-page/test-result', { 
             state: { 
               submissionId: result.submissionId,
-              score: result.score,
-              totalQuestions: examData.totalQuestions,
-              answers: answers,
-              questions: questions
+              scoreData: result.scoreData,
+              subjectWiseData: result.subjectWiseData,
+              answers: convertedAnswers,
+              questions: questions,
+              timeTaken: timeTaken,
+              examData: examData
             } 
           });
-        } catch (submitError) {
-          console.warn('Failed to submit to server:', submitError);
-          // Continue with local submission
-          setExamStarted(false);
-          navigate('/engineering-exams/rules/test-page/test-result', { 
-            state: { 
-              submissionId: 'local-' + Date.now(),
-              score: 0, // Calculate locally if needed
-              totalQuestions: examData.totalQuestions,
-              answers: answers,
-              questions: questions
-            } 
-          });
+        } else {
+          throw new Error(result.message || 'Failed to submit exam');
         }
-      } else {
-        // Local submission without server
-        setExamStarted(false);
-        navigate('/engineering-exams/rules/test-page/test-result', { 
-          state: { 
-            submissionId: 'local-' + Date.now(),
-            score: 0,
-            totalQuestions: examData.totalQuestions,
-            answers: answers,
-            questions: questions
-          } 
-        });
+      } catch (submitError) {
+        console.error('Failed to submit to server:', submitError);
+        alert('Failed to submit exam. Please try again or contact support.');
       }
-    } catch (error) {
-      console.error('Error submitting exam:', error);
-      alert('There was an error submitting your exam. Please try again.');
+    } else {
+      alert('No paper ID found. Please restart the exam.');
     }
-  };
-
+  } catch (error) {
+    console.error('Error submitting exam:', error);
+    alert('There was an error submitting your exam. Please try again.');
+  }
+};
   // Question statistics for current subject
   const getSubjectQuestionStats = (subjectName) => {
     if (!examData || !examData.subject || !Array.isArray(examData.subject)) {
