@@ -13,6 +13,7 @@ const {
   getExamResult,
   calculateScoreAndAnalysis
 } = require('../controllers/examController');
+const auth = require('../middleware/auth');
 
 // Public routes
 router.get('/', getAllExams); // GET /api/exams?category=Engineering
@@ -26,7 +27,7 @@ router.put('/:id', updateExam);
 router.delete('/:id', deleteExam);
 
 // Submit exam
-router.post('/submit', submitExam);
+router.post('/submit', auth, submitExam);
 
 // Get exam results
 router.get('/result/:submissionId', getExamResult);

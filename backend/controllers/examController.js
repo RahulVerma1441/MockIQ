@@ -535,7 +535,7 @@ const calculateScoreAndAnalysis = (answers, questions, markedForReview = []) => 
   };
 };
 
-// Updated submitExam function
+// Updated submitExam function with userId fix
 const submitExam = async (req, res) => {
   try {
     const { paperId, answers, markedForReview, timeTaken } = req.body;
@@ -580,9 +580,20 @@ const submitExam = async (req, res) => {
     // Calculate score and analysis
     const { scoreData, subjectWiseData } = calculateScoreAndAnalysis(answers, questions, markedForReview);
     
-    // Create submission
+    // Convert subjectWiseData to match the schema expected by analysis
+    const subjectWiseScores = Object.entries(subjectWiseData).map(([subject, data]) => ({
+      subject: subject,
+      score: data.marks,
+      totalQuestions: data.total,
+      attempted: data.correct + data.incorrect,
+      correct: data.correct,
+      wrong: data.incorrect  // Note: schema uses 'wrong' not 'incorrect'
+    }));
+    
+    // Create submission with userId from authenticated user
     const submissionData = {
       paperId,
+      userId: req.userId,  // Add userId from authenticated user
       answers,
       markedForReview: markedForReview || [],
       timeTaken: timeTaken || 0,
@@ -593,13 +604,16 @@ const submitExam = async (req, res) => {
       incorrectAnswers: scoreData.incorrectAnswers,
       unattempted: scoreData.unattempted,
       accuracy: scoreData.accuracy,
-      scoreData,
-      subjectWiseData,
+      subjectWiseScores: subjectWiseScores,  // Use the converted format
       submittedAt: new Date()
     };
     
     const submission = new Submission(submissionData);
     const savedSubmission = await submission.save();
+    
+    // Log for debugging
+    console.log('Submission created with userId:', submissionData.userId);
+    console.log('SubjectWiseScores:', subjectWiseScores);
     
     // Return response
     res.status(200).json({
@@ -615,7 +629,7 @@ const submitExam = async (req, res) => {
     res.status(500).json({ 
       success: false,
       message: 'Error submitting exam', 
-      error: error.message
+      error: error.message 
     });
   }
 };
