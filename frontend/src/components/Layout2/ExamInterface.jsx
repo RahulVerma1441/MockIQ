@@ -44,6 +44,7 @@ const ExamInterface = () => {
   const location = useLocation();
   const examData = location.state;
   const paperId = location.state?.paperId;
+  const userId = localStorage.getItem('userId');
 
   // Fullscreen functions
   const enterFullscreen = async () => {
@@ -501,6 +502,15 @@ const confirmSubmit = async () => {
     if (isFullscreen) {
       await exitFullscreen();
     }
+
+    const token = localStorage.getItem('token');
+     
+    if (!token) {
+      alert('Please login to submit the test');
+      window.location.href = '/login';
+      return;
+    }
+
     
     // Calculate time taken
     const timeTaken = (examData?.duration * 60) - timeLeft;
@@ -542,6 +552,7 @@ const confirmSubmit = async () => {
     if (paperId) {
       try {
         const submissionData = {
+          userId: userId,
           paperId: paperId,
           answers: convertedAnswers,
           markedForReview: Array.from(markedForReview),
@@ -555,6 +566,7 @@ const confirmSubmit = async () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify(submissionData)
         });
