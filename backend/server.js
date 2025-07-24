@@ -15,15 +15,20 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// Import auth middleware
+const auth = require('./middleware/auth');
+
 // Routes
 const examRoutes = require('./routes/examRoutes');
 const paperRoutes = require('./routes/paperRoutes'); 
 const questionRoutes = require('./routes/questionRoutes');
+const submissionRoutes = require('./routes/submissionRoutes');
 
 // API Routes
 app.use('/api/exams', examRoutes);
 app.use('/api/papers', paperRoutes);
 app.use('/api/questions', questionRoutes);
+app.use('/api/submissions', submissionRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -42,7 +47,7 @@ app.get('/', (req, res) => {
   res.send('MockIQ API running');
 });
 
-// Signup
+// Signup - FIXED: Use consistent userId in JWT
 app.post('/signup', async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -66,11 +71,11 @@ app.post('/signup', async (req, res) => {
     const user = new User({ name, email, password });
     await user.save();
 
-    // Generate JWT token
+    // Generate JWT token - FIXED: Use userId instead of id
     const token = jwt.sign(
-      { id: user._id, email: user.email }, 
+      { userId: user._id, email: user.email }, // Changed from 'id' to 'userId'
       JWT_SECRET, 
-      { expiresIn: '1h' }
+      { expiresIn: '7d' }
     );
 
     res.status(201).json({ 
@@ -88,7 +93,7 @@ app.post('/signup', async (req, res) => {
   }
 });
 
-// Login
+// Login - Already correct
 app.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -111,10 +116,10 @@ app.post('/login', async (req, res) => {
       });
     }
 
-    // Generate JWT token (assuming you have jwt setup)
+    // Generate JWT token
     const token = jwt.sign(
       { userId: user._id, email: user.email },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || JWT_SECRET,
       { expiresIn: '7d' }
     );
 
@@ -143,20 +148,25 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Optional: Route to verify token
-app.get('/verify', async (req, res) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-  
-  if (!token) {
-    return res.status(401).json({ message: 'No token provided' });
-  }
-
+// Verify token route - FIXED: Use consistent userId
+app.get('/verify', auth, async (req, res) => {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findById(decoded.id).select('-password');
-    res.json({ user });
+    // User is already attached by auth middleware
+    const user = req.user;
+    res.json({ 
+      success: true,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
   } catch (err) {
-    res.status(401).json({ message: 'Invalid token' });
+    res.status(401).json({ 
+      success: false,
+      message: 'Invalid token' 
+    });
   }
 });
 
