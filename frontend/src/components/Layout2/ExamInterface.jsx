@@ -290,7 +290,7 @@ const ExamInterface = () => {
                   subject: q.subject,
                   question: q.questionText,
                   options: options,
-                  type: q.questionType ? q.questionType.toLowerCase().replace(' ', '_') : 'single_choice',
+                  type: q.questionType ? q.questionType.toLowerCase().replace(' ', '_') : 'single_correct',
                   correctAnswer: q.correctAnswer || 0,
                   explanation: q.explanation || q.solution?.steps?.join(' ') || '',
                   marks: q.marks || 4,
@@ -380,25 +380,39 @@ const ExamInterface = () => {
     fetchExamData();
   }, [examData, paperId]);
 
-  // Helper function to generate mock questions
+  // Helper function to generate mock questions with different types
   const generateMockQuestions = () => {
     const mockQuestions = {};
     for (let i = 1; i <= 90; i++) {
       const subject = i <= 30 ? "Physics" : i <= 60 ? "Chemistry" : "Mathematics";
+      
+      // Mix different question types
+      let questionType = "single_correct";
+      if (i % 5 === 0) {
+        questionType = "multiple_correct";
+      } else if (i % 7 === 0) {
+        questionType = "numerical";
+      }
+      
       mockQuestions[i] = {
         subject: subject,
-        question: `This is a sample ${subject} question ${i}. What is the correct answer?`,
-        options: [
+        question: `This is a sample ${subject} question ${i}. ${
+          questionType === "multiple_correct" ? "(Multiple correct options)" :
+          questionType === "numerical" ? "(Enter numerical answer)" :
+          "What is the correct answer?"
+        }`,
+        options: questionType === "numerical" ? [] : [
           "Option A - First choice",
           "Option B - Second choice", 
           "Option C - Third choice",
           "Option D - Fourth choice"
         ],
-        type: "single_choice",
-        correctAnswer: 0,
+        type: questionType,
+        correctAnswer: questionType === "multiple_correct" ? [0, 2] : 0,
         explanation: "This is a sample explanation",
         marks: 4,
-        expectedTime: 120
+        expectedTime: 120,
+        numericalRange: questionType === "numerical" ? { min: 0, max: 100 } : null
       };
     }
     return mockQuestions;
@@ -465,11 +479,42 @@ const ExamInterface = () => {
     }
   };
 
-  // Answer handling
+  // Answer handling for different question types
   const handleAnswerSelect = (optionIndex) => {
+    const question = questions[currentQuestion];
+    
+    if (question.type === 'multiple_correct') {
+      // Handle multiple choice
+      setAnswers(prev => {
+        const currentAnswers = prev[currentQuestion] || [];
+        const isArray = Array.isArray(currentAnswers);
+        const answerArray = isArray ? [...currentAnswers] : [];
+        
+        const index = answerArray.indexOf(optionIndex);
+        if (index > -1) {
+          answerArray.splice(index, 1);
+        } else {
+          answerArray.push(optionIndex);
+        }
+        
+        return {
+          ...prev,
+          [currentQuestion]: answerArray.length > 0 ? answerArray : undefined
+        };
+      });
+    } else {
+      // Handle single choice
+      setAnswers(prev => ({
+        ...prev,
+        [currentQuestion]: optionIndex
+      }));
+    }
+  };
+
+  const handleNumericalAnswer = (value) => {
     setAnswers(prev => ({
       ...prev,
-      [currentQuestion]: optionIndex
+      [currentQuestion]: value
     }));
   };
 
@@ -515,8 +560,8 @@ const confirmSubmit = async () => {
     // Calculate time taken
     const timeTaken = (examData?.duration * 60) - timeLeft;
     
-    // Convert numerical answers to letters before sending to backend
-    const convertAnswersToLetters = (answers) => {
+    // Convert answers to appropriate format for backend
+    const convertAnswersForBackend = (answers) => {
       const letterMapping = {
         0: 'A', 1: 'B', 2: 'C', 3: 'D',
       };
@@ -525,13 +570,18 @@ const confirmSubmit = async () => {
       
       Object.keys(answers).forEach(questionNum => {
         const answer = answers[questionNum];
+        const question = questions[questionNum];
         
         if (answer === null || answer === undefined || answer === '') {
           convertedAnswers[questionNum] = '';
+        } else if (question?.type === 'numerical') {
+          // For numerical questions, keep the number as is
+          convertedAnswers[questionNum] = String(answer);
         } else if (Array.isArray(answer)) {
           // For multiple correct questions
           convertedAnswers[questionNum] = answer
             .map(a => letterMapping[a] || String(a))
+            .sort()
             .join(',');
         } else {
           // For single correct questions
@@ -542,8 +592,8 @@ const confirmSubmit = async () => {
       return convertedAnswers;
     };
     
-    // Convert answers to letter format
-    const convertedAnswers = convertAnswersToLetters(answers);
+    // Convert answers to appropriate format
+    const convertedAnswers = convertAnswersForBackend(answers);
     
     console.log('Original answers:', answers);
     console.log('Converted answers:', convertedAnswers);
@@ -636,7 +686,7 @@ const confirmSubmit = async () => {
     subject: 'Physics', 
     question: 'Loading question...', 
     options: ['Option A', 'Option B', 'Option C', 'Option D'], 
-    type: 'single_choice' 
+    type: 'single_correct' 
   };
   const [rangeStart, rangeEnd] = getCurrentSubjectRange();
 
@@ -791,6 +841,16 @@ const confirmSubmit = async () => {
                   <span className="text-base text-gray-600 font-medium">
                     Question {currentQuestion} of {examData.totalQuestions}
                   </span>
+                  {currentQ.type === 'multiple_correct' && (
+                    <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-semibold">
+                      Multiple Correct
+                    </span>
+                  )}
+                  {currentQ.type === 'numerical' && (
+                    <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-semibold">
+                      Numerical
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center space-x-3">
                   {markedForReview.has(currentQuestion) && (
@@ -811,31 +871,61 @@ const confirmSubmit = async () => {
                 </h2>
               </div>
 
-              {/* Options */}
-              <div className="space-y-4">
-                {currentQ.options.map((option, index) => (
-                  <label
-                    key={index}
-                    className={`flex items-center p-5 border-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
-                      answers[currentQuestion] === index
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200'
-                    }`}
-                  >
+              {/* Options for Single/Multiple Choice */}
+              {currentQ.type !== 'numerical' && (
+                <div className="space-y-4">
+                  {currentQ.options.map((option, index) => {
+                    const isSelected = currentQ.type === 'multiple_correct'
+                      ? (Array.isArray(answers[currentQuestion]) && answers[currentQuestion].includes(index))
+                      : (answers[currentQuestion] === index);
+
+                    return (
+                      <label
+                        key={index}
+                        className={`flex items-center p-5 border-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+                          isSelected
+                            ? 'border-blue-500 bg-blue-50'
+                            : 'border-gray-200'
+                        }`}
+                      >
+                        <input
+                          type={currentQ.type === 'multiple_correct' ? 'checkbox' : 'radio'}
+                          name={`question-${currentQuestion}`}
+                          value={index}
+                          checked={isSelected}
+                          onChange={() => handleAnswerSelect(index)}
+                          className="w-5 h-5 text-blue-600 border-gray-300 focus:ring-blue-500"
+                        />
+                        <span className="ml-4 text-gray-900 font-medium text-base">
+                          {String.fromCharCode(65 + index)}. {option}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Numerical Input */}
+              {currentQ.type === 'numerical' && (
+                <div className="max-w-md">
+                  <label className="block mb-4">
+                    <span className="text-gray-700 font-medium mb-2 block">Enter your answer:</span>
                     <input
-                      type="radio"
-                      name={`question-${currentQuestion}`}
-                      value={index}
-                      checked={answers[currentQuestion] === index}
-                      onChange={() => handleAnswerSelect(index)}
-                      className="w-5 h-5 text-blue-600 border-gray-300 focus:ring-blue-500"
+                      type="number"
+                      step="any"
+                      value={answers[currentQuestion] || ''}
+                      onChange={(e) => handleNumericalAnswer(e.target.value)}
+                      placeholder="Enter numerical value"
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-lg font-medium"
                     />
-                    <span className="ml-4 text-gray-900 font-medium text-base">
-                      {String.fromCharCode(65 + index)}. {option}
-                    </span>
                   </label>
-                ))}
-              </div>
+                  {currentQ.numericalRange && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      Expected range: {currentQ.numericalRange.min} to {currentQ.numericalRange.max}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Action Buttons */}
