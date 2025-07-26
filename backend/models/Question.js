@@ -71,7 +71,7 @@ const questionSchema = new mongoose.Schema({
   
   // Correct answer handling different question types
   correctAnswer: {
-    type: String,
+    type: mongoose.Schema.Types.Mixed,
     required: true
     // Examples:
     // Single Correct: "A" or "B"

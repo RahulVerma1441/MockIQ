@@ -30,7 +30,7 @@ router.delete('/:id', deleteExam);
 router.post('/submit', auth, submitExam);
 
 // Get exam results
-router.get('/result/:submissionId', getExamResult);
+router.get('/result/:submissionId', auth, getExamResult);
 
 // Seed data route (for initial setup)
 router.post('/seed', seedExamsData);

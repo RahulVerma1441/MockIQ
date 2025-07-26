@@ -21,4 +21,7 @@ router.get('/recent-tests', submissionController.getRecentTests);
 // Get strength analysis (radar chart)
 router.get('/strength', submissionController.getStrengthAnalysis);
 
+// Get detailed test analysis
+router.get('/test-analysis/:submissionId', submissionController.getTestAnalysisDetails);
+
 module.exports = router;
