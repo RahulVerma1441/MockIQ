@@ -444,6 +444,153 @@ exports.getStrengthAnalysis = async (req, res) => {
   }
 };
 
+// Get detailed test analysis for a specific submission
+exports.getTestAnalysisDetails = async (req, res) => {
+  try {
+    const { submissionId } = req.params;
+    const userId = req.user._id;
+
+    console.log('Fetching test analysis for submission:', submissionId);
+
+    // Get the submission with paper details
+    const submission = await Submission.findOne({
+      _id: submissionId,
+      userId: userId // Ensure user can only access their own submissions
+    }).populate('paperId');
+
+    if (!submission) {
+      return res.status(404).json({
+        success: false,
+        message: 'Submission not found or unauthorized'
+      });
+    }
+
+    // Get all questions for this paper
+    const Question = require('../models/Question');
+    const questions = await Question.find({ 
+      paperId: submission.paperId._id 
+    }).sort({ questionNumber: 1 });
+
+    // Format questions for frontend
+    const formattedQuestions = {};
+    questions.forEach(q => {
+      formattedQuestions[q.questionNumber] = {
+        id: q._id,
+        question: q.questionText,
+        options: q.options,
+        correctAnswer: q.correctAnswer,
+        type: q.questionType || 'Single Correct', // single_correct, multiple_correct, numerical
+        explanation: q.explanation || '',
+        explanationImage: q.explanationImage || '',
+        subject: q.subject,
+        topic: q.topic,
+        difficulty: q.difficulty,
+        marks: q.marks || 4,
+        negativeMarks: q.negativeMarks || -1,
+        expectedTime: q.expectedTime || 120 // in seconds
+      };
+    });
+
+    // Convert user answers map to plain object
+    const userAnswers = {};
+    if (submission.answers) {
+      submission.answers.forEach((value, key) => {
+        userAnswers[key] = value;
+      });
+    }
+
+    // Calculate overall statistics
+    let correctCount = 0;
+    let incorrectCount = 0;
+    let unattemptedCount = 0;
+    let totalMarksObtained = 0;
+
+    // Check each question
+    questions.forEach(q => {
+      const userAnswer = userAnswers[q.questionNumber];
+      const correctAnswer = q.correctAnswer;
+      
+      if (!userAnswer || userAnswer === '') {
+        unattemptedCount++;
+      } else {
+        // Check if answer is correct based on question type
+        let isCorrect = false;
+        
+        if (q.questionType === 'Numerical') {
+          const tolerance = 0.01;
+          isCorrect = Math.abs(parseFloat(userAnswer) - parseFloat(correctAnswer)) <= tolerance;
+        } else if (q.questionType === 'Multiple Correct') {
+          // Handle multiple correct answers
+          const userOptions = userAnswer.split(',').map(a => a.trim()).sort();
+          const correctOptions = Array.isArray(correctAnswer) 
+            ? correctAnswer.map(a => a.toString()).sort()
+            : correctAnswer.split(',').map(a => a.trim()).sort();
+          isCorrect = JSON.stringify(userOptions) === JSON.stringify(correctOptions);
+        } else {
+          // Single correct
+          isCorrect = userAnswer.toString() === correctAnswer.toString();
+        }
+        
+        if (isCorrect) {
+          correctCount++;
+          totalMarksObtained += (q.marks || 4);
+        } else {
+          incorrectCount++;
+          totalMarksObtained += (q.negativeMarks || -1);
+        }
+      }
+    });
+
+    // Prepare test details
+    const testDetails = {
+      examName: submission.paperId.title,
+      examType: submission.paperId.examType,
+      shift: submission.paperId.shift || 'Morning',
+      year: submission.paperId.year || new Date().getFullYear(),
+      totalQuestions: submission.paperId.totalQuestions || questions.length,
+      totalMarks: submission.paperId.totalMarks || 360,
+      duration: submission.paperId.duration || 10800, // in seconds
+      subject: submission.paperId.subjects || [
+        { name: 'Physics', range: [1, 30] },
+        { name: 'Chemistry', range: [31, 60] },
+        { name: 'Mathematics', range: [61, 90] }
+      ]
+    };
+
+    // Prepare response data
+    const responseData = {
+      success: true,
+      submissionId: submission._id,
+      questions: formattedQuestions,
+      userAnswers: userAnswers,
+      testDetails: testDetails,
+      scoreData: {
+        score: submission.score || totalMarksObtained,
+        totalMarks: testDetails.totalMarks,
+        percentage: parseFloat(((submission.score || totalMarksObtained) / testDetails.totalMarks * 100).toFixed(2)),
+        correct: correctCount,
+        incorrect: incorrectCount,
+        unattempted: unattemptedCount,
+        rank: submission.rank || null
+      },
+      subjectWiseData: submission.subjectWiseScores || [],
+      timeTaken: submission.timeTaken || 0,
+      submittedAt: submission.submittedAt,
+      markedForReview: submission.markedForReview || []
+    };
+
+    res.json(responseData);
+
+  } catch (error) {
+    console.error('Error fetching test analysis details:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching test analysis details',
+      error: error.message
+    });
+  }
+};
+
 // Helper function to format duration
 function formatDuration(seconds) {
   const hours = Math.floor(seconds / 3600);
