@@ -3,11 +3,13 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { TrendingUp, TrendingDown, Target, Clock, BookOpen, Award, Calendar, Filter, Loader } from 'lucide-react';
 import axios from 'axios';
 
+
 const AnalysisPage = () => {
   const [selectedExam, setSelectedExam] = useState('all');
   const [timeRange, setTimeRange] = useState('3months');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showAllTests, setShowAllTests] = useState(false); // New state for toggling test view
 
   // State for all data
   const [performanceData, setPerformanceData] = useState([]);
@@ -131,7 +133,8 @@ const AnalysisPage = () => {
             studyTimeChange: 0
           } } };
         }),
-        authAxios.get('/api/submissions/recent-tests', { params: { exam: selectedExam, limit: 10 } }).catch(err => {
+        // Updated to fetch all tests but we'll filter in component
+        authAxios.get('/api/submissions/recent-tests', { params: { exam: selectedExam } }).catch(err => {
           console.error('Recent tests API error:', err);
           return { data: { data: [] } };
         }),
@@ -191,6 +194,19 @@ const AnalysisPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Function to get displayed tests based on showAllTests state
+  const getDisplayedTests = () => {
+    if (showAllTests) {
+      return recentTests;
+    }
+    return recentTests.slice(0, 3); // Show only first 3 tests
+  };
+
+  // Function to toggle test view
+  const toggleTestView = () => {
+    setShowAllTests(!showAllTests);
   };
 
   if (loading) {
@@ -510,10 +526,17 @@ const AnalysisPage = () => {
       {/* Recent Test History */}
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">Recent Test History</h3>
-          <button className="text-indigo-600 hover:text-indigo-700 text-sm font-medium">
-            View All
-          </button>
+          <h3 className="text-lg font-semibold text-gray-900">
+            {showAllTests ? 'All Test History' : 'Recent Test History'}
+          </h3>
+          {recentTests.length > 3 && (
+            <button 
+              onClick={toggleTestView}
+              className="text-indigo-600 hover:text-indigo-700 text-sm font-medium transition-colors duration-200"
+            >
+              {showAllTests ? 'Show Recent' : 'View All'}
+            </button>
+          )}
         </div>
 
         {recentTests.length > 0 ? (
@@ -532,7 +555,7 @@ const AnalysisPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {recentTests.map((test) => (
+                {getDisplayedTests().map((test) => (
                   <tr key={test.id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-4 px-4">
                       <div className="font-medium text-gray-900">{test.name}</div>
@@ -572,7 +595,7 @@ const AnalysisPage = () => {
                     </td>
                     <td className="py-4 px-4">
                       <button 
-                        onClick={() => window.location.href = `/test-results/${test.id}`}
+                        onClick={() => window.location.href = `/dashboard/analysis/${test.id}`}
                         className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
                       >
                         View Details
@@ -586,6 +609,15 @@ const AnalysisPage = () => {
         ) : (
           <div className="flex items-center justify-center h-[200px] text-gray-500">
             No recent tests available. Start taking tests to see your history!
+          </div>
+        )}
+
+        {/* Show count information when in limited view */}
+        {recentTests.length > 3 && !showAllTests && (
+          <div className="mt-4 text-center">
+            <p className="text-sm text-gray-500">
+              Showing 3 of {recentTests.length} tests
+            </p>
           </div>
         )}
       </div>

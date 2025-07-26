@@ -17,6 +17,7 @@ import MedicalExams from "./pages/MedicalExams";
 import ExamRules from "./pages/ExamsRules";
 import ExamInterface from "./components/Layout2/ExamInterface";
 import ExamResult from "./pages/ExamResult";
+import TestAnalysisPage from "./components/Layout2/TestAnalysis";
 
 // Dashboard Layout Component
 function DashboardLayout({ children }) {
@@ -78,6 +79,14 @@ function AppRoutes() {
               <DashboardLayout>
                 <Analysis />
               </DashboardLayout>
+            } 
+          />
+          <Route 
+            path="/dashboard/analysis/:testId" 
+            element={
+              // <DashboardLayout>
+                <TestAnalysisPage />
+              // </DashboardLayout> 
             } 
           />
           <Route 
